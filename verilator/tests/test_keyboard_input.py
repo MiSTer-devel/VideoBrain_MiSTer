@@ -9,7 +9,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools"))
 from apl_source import encode
-from keyboard_input import MUSIC_BANKS, MUSIC_RECORD, MUSIC_REPLAY, keyboard_text, music, physical_keys
+from keyboard_input import MODE_LETTERS, MODE_SYMBOLS, MUSIC_BANKS, MUSIC_RECORD, MUSIC_REPLAY, keyboard_text, music, physical_keys
 
 
 def events(data):
@@ -111,6 +111,21 @@ class KeyboardTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'mutually exclusive'):
             music(text, 'letters', bank_fields=2, bank_ready=True)
 
+    def test_music_score_ready_overlaps_release_without_shortening_notes(self):
+        body = events(music('T120 O4 C O5 B O2 C', 'letters', timing='score-ready'))[5:-3]
+        self.assertEqual(music_pitches(body), [60, 83, 36])
+        self.assertEqual([event[1:] for event in body if event[0] in MUSIC_BANKS.values()],
+                         [(1, 2), (1, 2)])
+        self.assertEqual([event[1:] for event in body if event[0] not in MUSIC_BANKS.values()],
+                         [(28, 0), (28, 0), (28, 2)])
+
+    def test_music_score_ready_uses_rest_before_next_note(self):
+        body = events(music('O4 C R4 O5 B', 'letters', timing='score-ready'))[5:-3]
+        self.assertEqual([event for event in body if event[0] == 255], [(255, 28, 0)])
+        self.assertEqual(body[-2], (MUSIC_BANKS[12], 1, 2))
+        body = events(music('O2 C', 'letters', timing='score-ready'))[5:-3]
+        self.assertEqual(body[0], (MUSIC_BANKS[-12], 1, 0))
+
     def test_apl_hold_final(self):
         normal = encode("EDIT DEMO\nA=1\nENDE\nRUN DEMO\n")
         held = encode("EDIT DEMO\nA=1\nENDE\nRUN DEMO\n", hold_final=True)
@@ -126,25 +141,27 @@ class KeyboardTests(unittest.TestCase):
 
     def test_standard_symbols_and_initial_mode(self):
         a = events(keyboard_text('A,;?1', 'letters', hold_final=True))
-        self.assertEqual([key for key, _, _ in a], [32, 7, 3, 34, 11, 33])
-        self.assertEqual(events(keyboard_text('A', 'symbols', hold_final=True))[0], (11, 8, 8))
+        self.assertEqual([key for key, _, _ in a], [MODE_LETTERS, 32, 7, 3, 34, MODE_SYMBOLS, 33])
+        self.assertEqual(events(keyboard_text('A', 'symbols', hold_final=True))[:2],
+                         [(MODE_SYMBOLS, 8, 8), (MODE_LETTERS, 8, 8)])
         with self.assertRaises(ValueError):
             keyboard_text('A', None)
 
     def test_text_wrap_and_blank_lines(self):
         a = events(keyboard_text('ABCDEFGHIJKLMNOP\n\n1', 'letters', 'text', True))
         self.assertEqual([key for key, _, _ in a].count(27), 1)
-        self.assertEqual(a[-2:], [(11, 8, 8), (33, 8, 8)])
+        self.assertEqual(a[-2:], [(MODE_SYMBOLS, 8, 8), (33, 8, 8)])
         for text in ('A' * 17, '\n' * 8):
             with self.assertRaises(ValueError):
                 keyboard_text(text, 'letters', 'text')
 
     def test_music_scale_record_and_replay(self):
         a = events(music('T120 O4 L4 C D E F G A B > C', 'letters', replay=True))
-        self.assertEqual(a[:5], [(11, 8, 8), (19, 8, 64), (MUSIC_RECORD, 8, 8), (11, 8, 8), (19, 8, 8)])
+        self.assertEqual(a[:5], [(MODE_SYMBOLS, 8, 8), (19, 8, 64), (MUSIC_RECORD, 8, 8), (MODE_LETTERS, 8, 8), (19, 8, 8)])
         self.assertEqual([key for key, _, _ in a[5:-4]], [29, 25, 21, 17, 13, 9, 5, 6])
         self.assertEqual(a[5][1:], (22, 8))
-        self.assertEqual(a[-4:-1], [(11, 8, 8), (7, 8, 8), (11, 8, 8)])
+        self.assertEqual(a[-4:-1], [(MODE_SYMBOLS, 8, 8), (7, 8, 8), (MODE_LETTERS, 8, 8)])
+        self.assertEqual(music('C', 'letters'), music('C', 'symbols'))
         self.assertEqual(a[-1], (MUSIC_REPLAY, 8, 8))
 
     def test_music_accidentals_banks_rests_and_page_wait(self):

@@ -216,17 +216,92 @@ task check_bank_ready;
     emulate_input = 1; input_ready = 0;
 endtask
 
-task check_music_limit(input integer notes, input bit playback_mode, input bit repeat_song);
+task check_bank_gap(input bit late_release);
+    emulate_input = 0; input_ready = 1; key_accepted = 0;
+    presses = 0; frame_tick = 0;
+    packet[8] = 29; packet[9] = 2; packet[10] = 0;
+    packet[11] = 8'hfa; packet[12] = 1; packet[13] = 2;
+    packet[14] = 30; packet[15] = 2; packet[16] = 2;
+    init_packet(9); packet[3] = "2";
+    send_packet(17, -1);
+    frame_tick = 1;
+    while (!started) tick;
+    frame_tick = 0;
+    repeat (20) tick;
+    if (keys != (36'd1 << 29)) $fatal(1, "Initial overlap note missing");
+    repeat (2) begin frame_tick = 1; tick; frame_tick = 0; tick; end
+    repeat (20) tick;
+    if (keys != (36'd1 << 33)) $fatal(1, "Octave did not start inside note gap");
+    input_ready = 0; key_accepted = 1; tick; key_accepted = 0;
+    if (!late_release) input_ready = 1;
+    repeat (20) tick;
+    if (keys != 0) $fatal(1, "Octave overlap shortened score gap");
+    frame_tick = 1; tick; frame_tick = 0; tick;
+    repeat (20) tick;
+    if (keys != 0) $fatal(1, "Octave overlap skipped a score field");
+    frame_tick = 1; tick; frame_tick = 0; tick;
+    repeat (20) tick;
+    if (late_release) begin
+        if (keys != 0) $fatal(1, "Score deadline bypassed ROM readiness");
+        input_ready = 1;
+        repeat (20) tick;
+    end
+    if (keys != (36'd1 << 30)) $fatal(1, "Ready note missed score deadline");
+    frame_tick = 1; finish_entry;
+    if (error || !complete || presses != 3) $fatal(1, "Octave overlap lost a key");
+    emulate_input = 1; input_ready = 0;
+endtask
+
+task check_modes(input bit initial_mode);
+    symbols = initial_mode; presses = 0;
+    packet[8] = 8'hf9; packet[11] = 19;
+    packet[14] = 8'hf8; packet[17] = 29;
+    packet[20] = 8'hf9; packet[23] = 7; packet[26] = 8'hf8;
+    for (integer n = 8; n < 29; n = n + 3) begin
+        packet[n + 1] = 8; packet[n + 2] = 8;
+    end
+    init_packet(21); packet[3] = "2";
+    send_packet(29, -1); finish_entry;
+    if (error || !complete || symbols || presses != (initial_mode ? 6 : 7))
+        $fatal(1, "Explicit music modes failed from mode %0d", initial_mode);
+    if (observed[presses - 1] != 11 || observed[presses - 2] != 7)
+        $fatal(1, "Song did not restore lower mode");
+    presses = 0; auto_repeat = 1;
+    send_packet(29, -1);
+    for (integer i = 0; i < 2000 && presses < 14; i = i + 1) tick;
+    auto_repeat = 0; finish_entry;
+    if (error || !complete || symbols || presses != 14)
+        $fatal(1, "Repeated song lost SHIFT synchronization");
+
+    emulate_shift = 0; symbols = 0; presses = 0;
+    init_packet(3); packet[3] = "2";
+    send_packet(11, -1);
+    repeat (40) tick;
+    if (keys != (36'd1 << 11) || !busy || error)
+        $fatal(1, "SHIFT released before delayed acknowledgement");
+    symbols = 1; finish_entry;
+    if (error || !complete || presses != 1)
+        $fatal(1, "Delayed SHIFT acknowledgement failed");
+    symbols = 0; presses = 0;
+    send_packet(11, -1); finish_entry;
+    if (!error || complete || presses != 1)
+        $fatal(1, "Missing timed SHIFT acknowledgement ignored");
+    emulate_shift = 1;
+endtask
+
+task check_music_limit(input integer notes, input bit playback_mode, input bit repeat_song,
+                       input bit explicit_modes);
     integer offset, entered, expected;
-    packet[8] = 11; packet[11] = 19; packet[14] = 8'hfe;
-    packet[17] = 11; packet[20] = 19;
+    symbols = 0;
+    packet[8] = explicit_modes ? 8'hf9 : 11; packet[11] = 19; packet[14] = 8'hfe;
+    packet[17] = explicit_modes ? 8'hf8 : 11; packet[20] = 19;
     offset = 23;
     for (integer n = 0; n < notes; n = n + 1) begin
         packet[offset] = 255; packet[offset + 3] = 22; packet[offset + 6] = 29;
         offset = offset + 9;
     end
-    packet[offset] = 11; packet[offset + 3] = 7;
-    packet[offset + 6] = 11; packet[offset + 9] = 8'hfd;
+    packet[offset] = explicit_modes ? 8'hf9 : 11; packet[offset + 3] = 7;
+    packet[offset + 6] = explicit_modes ? 8'hf8 : 11; packet[offset + 9] = 8'hfd;
     offset = offset + 12;
     for (integer n = 8; n < offset; n = n + 3) begin
         packet[n + 1] = 2; packet[n + 2] = 1;
@@ -259,6 +334,7 @@ task check_music_limit(input integer notes, input bit playback_mode, input bit r
             (!playback_mode && observed[offset + 3] != 12))
             $fatal(1, "Music closing controls lost at cutoff");
     end
+    if (symbols) $fatal(1, "Music cutoff left SHIFT active");
     auto_repeat = 0; music_playback = 0;
 endtask
 
@@ -421,11 +497,17 @@ initial begin
     enabled = 1; auto_repeat = 0; music_playback = 0;
 
     check_bank_ready;
-    check_music_limit(78, 0, 0);
-    check_music_limit(79, 0, 0);
-    check_music_limit(80, 0, 0);
-    check_music_limit(90, 0, 1);
-    check_music_limit(90, 1, 0);
+    check_bank_gap(0);
+    check_bank_gap(1);
+    check_modes(0);
+    check_modes(1);
+    for (integer explicit_modes = 0; explicit_modes < 2; explicit_modes = explicit_modes + 1) begin
+        check_music_limit(78, 0, 0, 1'(explicit_modes));
+        check_music_limit(79, 0, 0, 1'(explicit_modes));
+        check_music_limit(80, 0, 0, 1'(explicit_modes));
+        check_music_limit(90, 0, 1, 1'(explicit_modes));
+        check_music_limit(90, 1, 0, 1'(explicit_modes));
+    end
 
     available = 1;
     for (integer line_end = 0; line_end < 2; line_end = line_end + 1) begin

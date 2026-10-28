@@ -24,13 +24,16 @@ FIELD_HZ = Fraction(14318181, 228 * 4) / Fraction(525, 2)
 MUSIC_REPLAY = 0xfd
 MUSIC_RECORD = 0xfe
 MUSIC_BANKS = {-12: 0xfa, 0: 0xfb, 12: 0xfc}
+MODE_LETTERS = 0xf8
+MODE_SYMBOLS = 0xf9
 
 
 def packet(events):
     payload = bytearray()
     for key, hold, gap in events:
-        if key not in range(36) and key not in (*MUSIC_BANKS.values(), MUSIC_REPLAY, MUSIC_RECORD, 255):
-            raise ValueError("event must be a matrix key, music control or WAIT")
+        if key not in range(36) and key not in (MODE_LETTERS, MODE_SYMBOLS,
+                                              *MUSIC_BANKS.values(), MUSIC_REPLAY, MUSIC_RECORD, 255):
+            raise ValueError("event must be a matrix key, mode control, music control or WAIT")
         if not 1 <= hold <= 255 or not 0 <= gap <= 255:
             raise ValueError("hold must be 1..255 fields; gap must be 0..255")
         payload.extend((key, hold, gap))
@@ -71,7 +74,7 @@ def keyboard_text(text, start_mode, profile="keyboard", hold_final=False):
     if start_mode not in ("letters", "symbols"):
         raise ValueError("text input requires --start-mode letters or symbols")
     mode = start_mode == "symbols"
-    events = []
+    events = [(MODE_SYMBOLS if mode else MODE_LETTERS, 8, 8)]
     lines = text.removeprefix("\ufeff").splitlines()
     if profile == "text" and (len(lines) > 7 or any(len(line) > 16 for line in lines)):
         raise ValueError("built-in Text accepts at most 7 lines of 16 characters")
@@ -98,13 +101,13 @@ def keyboard_text(text, start_mode, profile="keyboard", hold_final=False):
             else:
                 raise ValueError(f"line {line_no}, column {match.start()+1}: unsupported character {char!r}")
             if desired is not None and desired != mode:
-                events.append((11, 8, 8))
+                events.append((MODE_SYMBOLS if desired else MODE_LETTERS, 8, 8))
                 mode = desired
             events.append((key, 8, 8))
         # full text lines wrap, next in upper mode selects clock
         if not (profile == "text" and len(line) == 16) and not (hold_final and line_no == len(lines)):
             if mode:
-                events.append((11, 8, 8))
+                events.append((MODE_LETTERS, 8, 8))
                 mode = False
             events.append((27, 8, 72))
     return packet(events)
@@ -113,12 +116,12 @@ def keyboard_text(text, start_mode, profile="keyboard", hold_final=False):
 def music(text, start_mode, gap=None, min_hold=None, page_notes=None, page_wait=64, replay=False,
           bank_fields=None, bank_ready=False, timing=None):
     if timing is not None:
-        if timing not in ("score", "note"):
-            raise ValueError("music timing must be score or note")
+        if timing not in ("score", "score-ready", "note"):
+            raise ValueError("music timing must be score, score-ready or note")
         if bank_fields is not None or bank_ready:
             raise ValueError("timing and legacy bank options are mutually exclusive")
         bank_fields = 2 if timing == "score" else None
-        bank_ready = timing == "note"
+        bank_ready = timing in ("score-ready", "note")
     gap = gap if gap is not None else (2 if timing is not None else 8)
     min_hold = min_hold if min_hold is not None else (2 if timing is not None else 8)
     if start_mode not in ("letters", "symbols"):
@@ -132,10 +135,8 @@ def music(text, start_mode, gap=None, min_hold=None, page_notes=None, page_wait=
     if bank_ready and bank_fields is not None:
         raise ValueError("--bank-ready and --bank-fields are mutually exclusive")
     # shift-space clears the play/record song
-    events = []
-    if start_mode == "letters":
-        events.append((11, 8, 8))
-    events.extend([(19, 8, 64), (MUSIC_RECORD, 8, 8), (11, 8, 8), (19, 8, 8)])
+    events = [(MODE_SYMBOLS, 8, 8), (19, 8, 64), (MUSIC_RECORD, 8, 8),
+              (MODE_LETTERS, 8, 8), (19, 8, 8)]
     music_start = len(events)
     octave, tempo, length, bank = 4, 120, 4, 0
     count = 0
@@ -214,7 +215,19 @@ def music(text, start_mode, gap=None, min_hold=None, page_notes=None, page_wait=
                         remaining = held - min_hold
                     events[-1] = (key, held - remaining, released)
             if bank_ready:
-                events.append((MUSIC_BANKS[bank], 1, 0))
+                bank_gap = 0
+                if timing == "score-ready" and len(events) > music_start:
+                    key, held, released = events[-1]
+                    if key == 255:
+                        bank_gap = min(gap, held)
+                        if held == bank_gap:
+                            events.pop()
+                        else:
+                            events[-1] = (key, held - bank_gap, released)
+                    else:
+                        bank_gap = released
+                        events[-1] = (key, held, 0)
+                events.append((MUSIC_BANKS[bank], 1, bank_gap))
             else:
                 events.append(({-12: 33, 0: 19, 12: 22}[bank], control_fields, control_fields))
         hold = fields - gap
@@ -228,7 +241,7 @@ def music(text, start_mode, gap=None, min_hold=None, page_notes=None, page_wait=
             wait(events, page_wait)
     if not sounding:
         raise ValueError("music contains no notes")
-    events.extend([(11, 8, 8), (7, 8, 8), (11, 8, 8)])
+    events.extend([(MODE_SYMBOLS, 8, 8), (7, 8, 8), (MODE_LETTERS, 8, 8)])
     if replay:
         events.append((MUSIC_REPLAY, 8, 8))
     data = packet(events)
@@ -249,9 +262,10 @@ def main():
     parser.add_argument("--gap", type=int, help="music key-off fields (default: 2)")
     parser.add_argument("--min-hold", type=int, help="music minimum held fields (default: 2)")
     timing_options = parser.add_mutually_exclusive_group()
-    timing_options.add_argument("--timing", choices=("score", "note"),
+    timing_options.add_argument("--timing", choices=("score", "score-ready", "note"),
                                 help="score: preserve tempo (default); note: preserve note lengths, "
-                                     "adding ROM-acknowledged octave-switch time")
+                                     "adding ROM-acknowledged octave-switch time; score-ready: "
+                                     "overlap acknowledged switches with note gaps (requires updated core)")
     timing_options.add_argument("--bank-fields", type=int, help=argparse.SUPPRESS)
     timing_options.add_argument("--bank-ready", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--page-notes", type=int, help="insert a wait at this measured entry interval")

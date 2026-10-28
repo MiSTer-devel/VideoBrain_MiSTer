@@ -215,11 +215,13 @@ BEGIN
 
   cart_loaded <= cart_loaded_l;
   apl_available <= '1' WHEN cart_auto_type = to_unsigned(CART_COMPLANG, 8) ELSE '0';
-  -- ed01 and both static-staff patches share the keyboard routine
+  -- ed01 and the static-staff patches share the bank acceptance hook
   music_input <= '1' WHEN cart_loaded_l = '1' AND dl_cart = '0' AND
     cart_size = to_unsigned(2048, cart_size'length) AND
     (NOT cart_crc = CART_CRC_MUSICTEACHER1 OR NOT cart_crc = x"F4390144" OR
-     NOT cart_crc = x"3BE4D855") ELSE '0';
+     NOT cart_crc = x"3BE4D855" OR NOT cart_crc = x"7A568961" OR
+     NOT cart_crc = x"9E59066B" OR NOT cart_crc = x"7CFE495D" OR
+     NOT cart_crc = x"99CC38F2") ELSE '0';
   -- bank d input loop: release verified at 3c14, new key accepted at 3c20
   apl_key_accepted <= '1' WHEN reset_na = '1' AND
     ext_rd = '1' AND ext_fetch = '1' AND
@@ -235,10 +237,16 @@ BEGIN
         apl_input_ready <= '0';
       ELSIF music_input = '1' THEN
         IF ext_rd = '1' AND ext_fetch = '1' THEN
-          IF ext_addr = x"14D8" OR ext_addr = x"158F" THEN
+          IF ext_addr = x"14D8" OR ext_addr = x"158F" OR
+             ((NOT cart_crc = x"7A568961" OR NOT cart_crc = x"9E59066B" OR
+               NOT cart_crc = x"7CFE495D" OR NOT cart_crc = x"99CC38F2") AND
+              ext_addr = x"13B5") THEN
             apl_input_ready <= '1';
           ELSIF ext_addr = x"10A1" OR ext_addr = x"1154" OR
-                ext_addr = x"14C8" OR ext_addr = x"14E4" THEN
+                ext_addr = x"14C8" OR ext_addr = x"14E4" OR
+                ((NOT cart_crc = x"7A568961" OR NOT cart_crc = x"9E59066B" OR
+                  NOT cart_crc = x"7CFE495D" OR NOT cart_crc = x"99CC38F2") AND
+                 ext_addr = x"13C0") THEN
             apl_input_ready <= '0';
           END IF;
         END IF;

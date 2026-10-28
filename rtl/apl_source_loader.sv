@@ -28,7 +28,8 @@ module apl_source_loader #(
 localparam IDLE = 0, RECEIVE = 1, WAIT_START = 2, READ_KEY = 3,
            SELECT_KEY = 4, HOLD_KEY = 5, RELEASE_KEY = 6,
            BANK_READY = 7, READ_HOLD = 8, SELECT_HOLD = 9, READ_GAP = 10,
-           SELECT_GAP = 11, BANK_HOLD = 12, BANK_RELEASE = 13;
+           SELECT_GAP = 11, BANK_HOLD = 12, BANK_RELEASE = 13, SHIFT_WAIT = 14;
+localparam [7:0] MODE_LETTERS = 8'hf8, MODE_SYMBOLS = 8'hf9;
 localparam [7:0] MUSIC_LOW = 8'hfa, MUSIC_MIDDLE = 8'hfb, MUSIC_HIGH = 8'hfc;
 localparam [7:0] MUSIC_REPLAY = 8'hfd, MUSIC_RECORD = 8'hfe;
 reg [3:0] state = IDLE;
@@ -40,6 +41,7 @@ reg [11:0] position = 0;
 reg [7:0] memory [0:4095];
 reg [7:0] token;
 reg [7:0] frames = 0;
+reg [7:0] bank_gap = 0;
 reg shifting = 0, shifted = 0;
 reg timed = 0;
 reg playback = 0;
@@ -151,7 +153,7 @@ always @(posedge clk) begin
                             default: begin
                                 crc <= crc_byte(crc, data);
                                 if (timed) begin
-                                    if ((payload_phase == 0 && data > 35 && data < MUSIC_LOW) ||
+                                    if ((payload_phase == 0 && data > 35 && data < MODE_LETTERS) ||
                                         (payload_phase == 1 && data == 0)) bad <= 1;
                                     payload_phase <= payload_phase == 2 ? 0 : payload_phase + 1'b1;
                                 end else if (!valid_key(data)) bad <= 1;
@@ -200,16 +202,21 @@ always @(posedge clk) begin
             SELECT_GAP: begin
                 gap_frames <= token;
                 shifting <= 0;
-                if (recording && music_notes == 79 && event_key != 11) begin
+                if (recording && music_notes == 79 && event_key != 11 && event_key != MODE_SYMBOLS) begin
                     // skip to closing shift/no-record
                     keys <= 0;
                     frames <= 0;
                     state <= RELEASE_KEY;
                 end else if (event_key >= MUSIC_LOW && event_key <= MUSIC_HIGH) begin
+                    bank_gap <= token;
                     frames <= 255;
                     state <= BANK_READY;
                 end else begin
                     case (event_key)
+                        MODE_LETTERS, MODE_SYMBOLS: begin
+                            keys <= symbols == event_key[0] ? 36'd0 : 36'd1 << 11;
+                            shifting <= symbols != event_key[0];
+                        end
                         MUSIC_REPLAY: keys <= playback ? 36'd0 : 36'd1 << 12;
                         MUSIC_RECORD: begin
                             keys <= 36'd1 << (playback ? 7 : 33);
@@ -220,12 +227,13 @@ always @(posedge clk) begin
                         default: keys <= 36'd1 << event_key[5:0];
                     endcase
                     if (recording && music_note(event_key)) music_notes <= music_notes + 1'b1;
-                    if (event_key == 11 && music_notes != 0) recording <= 0;
+                    if ((event_key == 11 || event_key == MODE_SYMBOLS) && music_notes != 0) recording <= 0;
                     frames <= hold_frames;
                     state <= HOLD_KEY;
                 end
             end
             BANK_READY, BANK_HOLD, BANK_RELEASE: begin
+                if (frame_tick && bank_gap != 0) bank_gap <= bank_gap - 1'b1;
                 if (state == BANK_READY && input_ready) begin
                     case (event_key)
                         MUSIC_LOW: keys <= 36'd1 << 33;
@@ -240,8 +248,10 @@ always @(posedge clk) begin
                     frames <= 255;
                     state <= BANK_RELEASE;
                 end else if (state == BANK_RELEASE && input_ready) begin
-                    frames <= 0;
-                    state <= RELEASE_KEY;
+                    if (bank_gap == 0 || (frame_tick && bank_gap == 1)) begin
+                        frames <= 0;
+                        state <= RELEASE_KEY;
+                    end else frames <= 255;
                 end else if (frame_tick) begin
                     if (frames > 1) frames <= frames - 1'b1;
                     else begin
@@ -270,10 +280,27 @@ always @(posedge clk) begin
                 end
             end else if (timed && frame_tick) begin
                 if (frames > 1) frames <= frames - 1'b1;
-                else begin
+                else if (shifting && symbols != event_key[0]) begin
+                    frames <= 255;
+                    state <= SHIFT_WAIT;
+                end else begin
                     keys <= 0;
                     frames <= gap_frames;
                     state <= RELEASE_KEY;
+                end
+            end
+            SHIFT_WAIT: begin
+                if (symbols == event_key[0]) begin
+                    keys <= 0;
+                    frames <= gap_frames;
+                    state <= RELEASE_KEY;
+                end else if (frame_tick) begin
+                    if (frames > 1) frames <= frames - 1'b1;
+                    else begin
+                        keys <= 0;
+                        error <= 1;
+                        state <= IDLE;
+                    end
                 end
             end
             RELEASE_KEY: if (frame_tick || (timed && frames == 0)) begin

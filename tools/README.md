@@ -28,7 +28,14 @@ ROMs and firmware are not bundled.
 
 `patch_music_teacher.py` and `patch_infoman_printer.py` each take an original
 ROM path and a separate output path. The Music Teacher patch is experimental
-and suppresses staff rendering. For the Information Manager correction option,
+and suppresses staff rendering. Version 0.4 polls Program 1 input directly
+and services video when the BIOS RAM threshold and video Y permit it, without
+waiting for a field. Minimum octave timing uses ROM-acknowledged bank controls;
+fixed-duration score files retain their encoded switch allowance. Experimental
+`--timing score-ready` overlaps acknowledged switches with musical gaps and
+requires the corresponding loader update.
+Hardware validation remains necessary.
+For the Information Manager correction option,
 see [printer capture](../docs/PRINTER.md#capture-a-report-or-session).
 
 ## Keyboard files
@@ -45,7 +52,10 @@ python3 tools/keyboard_input.py music.mml music.vbk --profile music --start-mode
 `apl_source.py` and the default `keyboard_input.py --profile apl` generate
 APL/S input with NEXT after each nonblank line. `--hold-final` leaves the
 last line unsubmitted. The `text` profile handles the built-in Text screen;
-`keyboard` follows the printed keyboard. Both require `--start-mode`.
+`keyboard` follows the printed keyboard. Both require `--start-mode`, which
+the generated file establishes using tracked SHIFT state. Music synchronizes
+SHIFT automatically and finishes in lower mode. Regenerate older VBK2 files
+to use mode synchronization; updated files require a core supporting F8/F9.
 The `keys` profile accepts physical key scripts such as `NEXT 8 8` and
 `WAIT 120`, with durations in video fields.
 
