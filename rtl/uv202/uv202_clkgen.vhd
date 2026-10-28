@@ -1,0 +1,130 @@
+-- reference: kevtris "videobrain unwrapped" v0.05
+-- brclk/colclk: 14.318181 mhz /4
+-- uv202 /7 glitches during waits, board uses separate 4 mhz /2 for cpu
+
+LIBRARY ieee;
+USE ieee.std_logic_1164.ALL;
+USE ieee.numeric_std.ALL;
+
+LIBRARY work;
+USE work.base_pack.ALL;
+USE work.uv202_pack.ALL;
+
+ENTITY uv202_clkgen IS
+  GENERIC (
+    CLK_DIV_MCLK : positive := 1;
+
+    -- unused; cpu timing uses mclk_hz and cpu_half_hz
+    CPU_CLK_DIV  : positive := 7
+    );
+  PORT (
+    clk        : IN  std_logic;
+    reset_na   : IN  std_logic;
+
+    mclk_ena   : OUT std_logic;
+
+    brclk_ena  : OUT std_logic;
+
+    cpu_ena    : OUT std_logic;
+    cpu_sample : OUT std_logic := '0';
+
+    brclk_phase : OUT uv2
+    );
+END ENTITY uv202_clkgen;
+
+ARCHITECTURE rtl OF uv202_clkgen IS
+
+  SIGNAL mclk_div_cnt : natural RANGE 0 TO CLK_DIV_MCLK-1 := 0;
+  SIGNAL mclk_ena_l   : std_logic;
+
+  SIGNAL brclk_div_cnt : natural RANGE 0 TO BRCLK_DIV-1 := 0;
+  SIGNAL brclk_ena_l   : std_logic;
+  SIGNAL brclk_phase_l : uv2 := (OTHERS => '0');
+
+  CONSTANT CPU_HALF_HZ : natural := 4_000_000;
+  SIGNAL cpu_phase_acc : natural RANGE 0 TO MCLK_HZ-1 := 0;
+  SIGNAL cpu_ena_l     : std_logic;
+  SIGNAL cpu_sample_l  : std_logic;
+
+BEGIN
+
+
+  gen_mclk_passthru : IF CLK_DIV_MCLK = 1 GENERATE
+    mclk_ena_l <= '1';
+  END GENERATE;
+
+  gen_mclk_divide : IF CLK_DIV_MCLK > 1 GENERATE
+    PROCESS(clk, reset_na) IS
+    BEGIN
+      IF reset_na = '0' THEN
+        mclk_div_cnt <= 0;
+        mclk_ena_l   <= '0';
+      ELSIF rising_edge(clk) THEN
+        IF mclk_div_cnt = CLK_DIV_MCLK-1 THEN
+          mclk_div_cnt <= 0;
+          mclk_ena_l   <= '1';
+        ELSE
+          mclk_div_cnt <= mclk_div_cnt + 1;
+          mclk_ena_l   <= '0';
+        END IF;
+      END IF;
+    END PROCESS;
+  END GENERATE;
+
+  mclk_ena <= mclk_ena_l;
+
+
+  PROCESS(clk, reset_na) IS
+  BEGIN
+    IF reset_na = '0' THEN
+      brclk_div_cnt <= 0;
+      brclk_ena_l   <= '0';
+      brclk_phase_l <= (OTHERS => '0');
+    ELSIF rising_edge(clk) THEN
+      brclk_ena_l <= '0';
+      IF mclk_ena_l = '1' THEN
+        IF brclk_div_cnt = BRCLK_DIV-1 THEN
+          brclk_div_cnt <= 0;
+          brclk_ena_l   <= '1';
+          brclk_phase_l <= brclk_phase_l + 1;
+        ELSE
+          brclk_div_cnt <= brclk_div_cnt + 1;
+        END IF;
+      END IF;
+    END IF;
+  END PROCESS;
+
+  brclk_ena   <= brclk_ena_l;
+  brclk_phase <= brclk_phase_l;
+
+
+  PROCESS(clk, reset_na) IS
+    VARIABLE phase_v : natural;
+  BEGIN
+    IF reset_na = '0' THEN
+      cpu_phase_acc <= 0;
+      cpu_ena_l     <= '0';
+      cpu_sample_l  <= '0';
+    ELSIF rising_edge(clk) THEN
+      cpu_ena_l <= '0';
+      cpu_sample_l <= '0';
+      IF mclk_ena_l = '1' THEN
+        phase_v := cpu_phase_acc + CPU_HALF_HZ;
+        -- rising 4 mhz oscillator edge, half a period before cpu_ena
+        IF cpu_phase_acc < (MCLK_HZ + 1) / 2 AND phase_v >= (MCLK_HZ + 1) / 2 THEN
+          cpu_sample_l <= '1';
+        END IF;
+        IF phase_v >= MCLK_HZ THEN
+          cpu_phase_acc <= phase_v - MCLK_HZ;
+          cpu_ena_l     <= '1';
+        ELSE
+          cpu_phase_acc <= phase_v;
+        END IF;
+      END IF;
+    END IF;
+  END PROCESS;
+
+  cpu_ena <= cpu_ena_l;
+  cpu_sample <= cpu_sample_l;
+
+END ARCHITECTURE rtl;

@@ -1,0 +1,192 @@
+-- TODO: verify equalization/vsync half-line seam on hardware
+
+LIBRARY ieee;
+USE ieee.std_logic_1164.ALL;
+USE ieee.numeric_std.ALL;
+
+LIBRARY work;
+USE work.base_pack.ALL;
+USE work.uv202_pack.ALL;
+
+ENTITY uv202_timing IS
+  PORT (
+    clk        : IN  std_logic;
+    reset_na   : IN  std_logic;
+    brclk_ena  : IN  std_logic;
+    progressive : IN std_logic := '0';
+
+    hblank     : OUT std_logic;
+    vblank     : OUT std_logic;
+    burst      : OUT std_logic;
+    csync      : OUT std_logic;
+    scanline   : OUT std_logic;
+    field      : OUT std_logic;
+
+    hpos       : OUT unsigned(7 DOWNTO 0);
+    vpos       : OUT unsigned(8 DOWNTO 0);
+    -- pulse at hpos 0 after vpos advances; 33 hblank cycles remain for fetch
+    line_start     : OUT std_logic;
+
+    hblank_falling : OUT std_logic;
+    hblank_rising  : OUT std_logic    -- 1-cycle pulse, fifo-clear trigger for uv201
+    );
+END ENTITY uv202_timing;
+
+ARCHITECTURE rtl OF uv202_timing IS
+
+  SIGNAL hpos_l    : unsigned(7 DOWNTO 0) := (OTHERS => '0');
+  SIGNAL vpos_l     : unsigned(8 DOWNTO 0) := (OTHERS => '0');
+  SIGNAL field_l    : std_logic := '0';
+
+  SIGNAL hblank_l   : std_logic := '1';
+  SIGNAL vblank_l   : std_logic := '1';
+  SIGNAL burst_l    : std_logic := '0';
+  SIGNAL csync_l    : std_logic := '0';
+  SIGNAL scanline_l : std_logic := '0';
+
+  SIGNAL line_start_l  : std_logic := '0';
+  SIGNAL hblank_fall_l : std_logic := '0';
+  SIGNAL hblank_rise_l : std_logic := '0';
+
+  SIGNAL lines_this_field : unsigned(8 DOWNTO 0);
+
+  CONSTANT VBLANK_LINES : natural := 21;
+
+  -- whole-line approximation for csync; hblank and field lengths are separate
+  CONSTANT NORMAL_LINES_ODD  : natural := 244;
+  CONSTANT NORMAL_LINES_EVEN : natural := 243;
+
+  TYPE line_kind_t IS (LK_VSYNC, LK_EQ, LK_NORMAL);
+  SIGNAL line_kind : line_kind_t;
+
+BEGIN
+
+  lines_this_field <= to_unsigned(LINES_ODD_FIELD, 9) WHEN progressive = '1' OR field_l = '0' ELSE
+                       to_unsigned(LINES_EVEN_FIELD, 9);
+
+  PROCESS(vpos_l, field_l, progressive)
+    VARIABLE post_eq_start : unsigned(8 DOWNTO 0);
+  BEGIN
+    IF vpos_l < to_unsigned(VSYNC_LINES, 9) THEN
+      line_kind <= LK_VSYNC;
+    ELSIF vpos_l < to_unsigned(VSYNC_LINES + EQ_LINES_PRE, 9) THEN
+      line_kind <= LK_EQ;
+    ELSE
+      IF progressive = '1' OR field_l = '0' THEN
+        post_eq_start := to_unsigned(VSYNC_LINES + EQ_LINES_PRE + NORMAL_LINES_ODD, 9);
+      ELSE
+        post_eq_start := to_unsigned(VSYNC_LINES + EQ_LINES_PRE + NORMAL_LINES_EVEN, 9);
+      END IF;
+
+      IF vpos_l < post_eq_start THEN
+        line_kind <= LK_NORMAL;
+      ELSE
+        line_kind <= LK_EQ;
+      END IF;
+    END IF;
+  END PROCESS;
+
+
+  PROCESS(clk, reset_na) IS
+  BEGIN
+    IF reset_na = '0' THEN
+      hpos_l    <= (OTHERS => '0');
+      vpos_l    <= (OTHERS => '0');
+      field_l   <= '0';
+      hblank_l  <= '1';
+      vblank_l  <= '1';
+      burst_l   <= '0';
+      csync_l   <= '0';
+      scanline_l <= '0';
+      hblank_fall_l <= '0';
+      hblank_rise_l <= '0';
+
+    ELSIF rising_edge(clk) THEN
+      hblank_fall_l <= '0';
+      hblank_rise_l <= '0';
+      line_start_l  <= '0';
+
+      IF brclk_ena = '1' THEN
+
+        IF hpos_l = BRCLKS_PER_LINE-1 THEN
+          hpos_l <= (OTHERS => '0');
+          line_start_l <= '1';
+          scanline_l <= NOT scanline_l;
+
+          IF vpos_l = lines_this_field-1 THEN
+            vpos_l  <= (OTHERS => '0');
+            field_l <= NOT field_l;
+          ELSE
+            vpos_l <= vpos_l + 1;
+          END IF;
+        ELSE
+          hpos_l <= hpos_l + 1;
+        END IF;
+
+        -- hblank is high at output hpos 222..227 and 0..32
+        -- compare one cycle early to align registered flag with hpos
+        IF hpos_l = to_unsigned(HBLANK_START - 1, 8) THEN
+          hblank_l <= '1';
+          hblank_rise_l <= '1';
+        ELSIF hpos_l = to_unsigned(HBLANK_END - 1, 8) THEN
+          hblank_l <= '0';
+          hblank_fall_l <= '1';
+        END IF;
+
+        IF hpos_l >= to_unsigned(BURST_START, 8) AND
+           hpos_l <  to_unsigned(BURST_START + BURST_WIDTH, 8) THEN
+          burst_l <= NOT vblank_l;
+        ELSE
+          burst_l <= '0';
+        END IF;
+
+        IF vpos_l < to_unsigned(VBLANK_LINES, 9) THEN
+          vblank_l <= '1';
+        ELSE
+          vblank_l <= '0';
+        END IF;
+
+        CASE line_kind IS
+          WHEN LK_NORMAL =>
+            csync_l <= to_std_logic(hpos_l < to_unsigned(CSYNC_WIDTH_NORM, 8));
+
+          WHEN LK_EQ =>
+            csync_l <= to_std_logic(
+                         hpos_l < to_unsigned(EQ_PULSE_WIDTH, 8)
+                       ) OR
+                       to_std_logic(
+                         hpos_l >= to_unsigned(EQ_PULSE2_START, 8) AND
+                         hpos_l <  to_unsigned(EQ_PULSE2_START + EQ_PULSE_WIDTH, 8)
+                       );
+
+          WHEN LK_VSYNC =>
+            csync_l <= NOT (
+                         to_std_logic(
+                           hpos_l >= to_unsigned(VSYNC_PULSE1_START, 8) AND
+                           hpos_l <  to_unsigned(VSYNC_PULSE1_START + VSYNC_PULSE_WIDTH, 8)
+                         ) OR
+                         to_std_logic(
+                           hpos_l >= to_unsigned(VSYNC_PULSE2_START, 8) AND
+                           hpos_l <  to_unsigned(VSYNC_PULSE2_START + VSYNC_PULSE_WIDTH, 8)
+                         )
+                       );
+        END CASE;
+
+      END IF;
+    END IF;
+  END PROCESS;
+
+  hblank   <= hblank_l;
+  vblank   <= vblank_l;
+  burst    <= burst_l;
+  csync    <= csync_l;
+  scanline <= scanline_l;
+  field    <= field_l;
+
+  hpos <= hpos_l;
+  vpos <= vpos_l;
+  line_start     <= line_start_l;
+  hblank_falling <= hblank_fall_l;
+  hblank_rising  <= hblank_rise_l;
+
+END ARCHITECTURE rtl;

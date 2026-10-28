@@ -1,0 +1,109 @@
+-- reference: kevtris "videobrain unwrapped" v0.05,
+-- "the basics of uv201 rendering"
+
+LIBRARY ieee;
+USE ieee.std_logic_1164.ALL;
+USE ieee.numeric_std.ALL;
+
+LIBRARY work;
+USE work.uv201_pack.ALL;
+
+ENTITY uv201_fifo IS
+  PORT (
+    clk      : IN  std_logic;
+    reset_na : IN  std_logic;
+
+    -- clear bypasses ce to preserve the one-clock hblank pulse
+    brclk_ena     : IN std_logic;
+    hblank_rising : IN std_logic;
+
+    wr_en    : IN  std_logic;
+    wr_entry : IN  uv201_fifo_entry_t;
+    writable : OUT std_logic;
+    full     : OUT std_logic;
+
+    rd_pop   : IN  std_logic;
+    rd_valid : OUT std_logic;
+    rd_entry : OUT uv201_fifo_entry_t;
+
+    level : OUT unsigned(3 DOWNTO 0)
+    );
+END ENTITY uv201_fifo;
+
+ARCHITECTURE rtl OF uv201_fifo IS
+  TYPE fifo_mem_t IS ARRAY (0 TO UV201_FIFO_DEPTH - 1) OF uv201_fifo_entry_t;
+  SIGNAL mem : fifo_mem_t := (OTHERS => UV201_FIFO_ENTRY_ZERO);
+
+  SIGNAL wr_ptr : natural RANGE 0 TO UV201_FIFO_DEPTH - 1 := 0;
+  SIGNAL rd_ptr : natural RANGE 0 TO UV201_FIFO_DEPTH - 1 := 0;
+  SIGNAL count  : natural RANGE 0 TO UV201_FIFO_DEPTH := 0;
+
+  SIGNAL writable_l : std_logic := '1';
+BEGIN
+
+  PROCESS (clk, reset_na) IS
+    VARIABLE do_push    : boolean;
+    VARIABLE do_pop     : boolean;
+    VARIABLE next_count : natural RANGE 0 TO UV201_FIFO_DEPTH;
+  BEGIN
+    IF reset_na = '0' THEN
+      mem        <= (OTHERS => UV201_FIFO_ENTRY_ZERO);
+      wr_ptr     <= 0;
+      rd_ptr     <= 0;
+      count      <= 0;
+      writable_l <= '1';
+
+    ELSIF rising_edge(clk) THEN
+      IF hblank_rising = '1' THEN
+        -- hardware clears fifo storage and pointers
+        mem        <= (OTHERS => UV201_FIFO_ENTRY_ZERO);
+        wr_ptr     <= 0;
+        rd_ptr     <= 0;
+        count      <= 0;
+        writable_l <= '1';
+
+      ELSIF brclk_ena = '1' THEN
+        do_push := (wr_en = '1') AND (writable_l = '1') AND
+                   (count < UV201_FIFO_DEPTH);
+        do_pop  := (rd_pop = '1') AND (count > 0);
+
+        next_count := count;
+
+        IF do_push THEN
+          mem(wr_ptr) <= wr_entry;
+          IF wr_ptr = UV201_FIFO_DEPTH - 1 THEN
+            wr_ptr <= 0;
+          ELSE
+            wr_ptr <= wr_ptr + 1;
+          END IF;
+          next_count := next_count + 1;
+        END IF;
+
+        IF do_pop THEN
+          IF rd_ptr = UV201_FIFO_DEPTH - 1 THEN
+            rd_ptr <= 0;
+          ELSE
+            rd_ptr <= rd_ptr + 1;
+          END IF;
+          next_count := next_count - 1;
+        END IF;
+
+        count <= next_count;
+
+        IF next_count = UV201_FIFO_DEPTH THEN
+          writable_l <= '0';
+        ELSIF next_count <= 8 THEN
+          writable_l <= '1';
+        -- level 9 retains the previous state (10-to-8 hysteresis)
+        END IF;
+      END IF;
+    END IF;
+  END PROCESS;
+
+  rd_entry <= mem(rd_ptr) WHEN count > 0 ELSE UV201_FIFO_ENTRY_ZERO;
+  rd_valid <= '1' WHEN count > 0 ELSE '0';
+  writable <= writable_l;
+  full     <= '1' WHEN count = UV201_FIFO_DEPTH ELSE '0';
+  level    <= to_unsigned(count, level'length);
+
+END ARCHITECTURE rtl;

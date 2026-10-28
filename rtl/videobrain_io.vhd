@@ -1,0 +1,109 @@
+-- uv201 kbd selects keyboard column 8 when low
+
+LIBRARY ieee;
+USE ieee.std_logic_1164.ALL;
+USE ieee.numeric_std.ALL;
+
+LIBRARY work;
+USE work.base_pack.ALL;
+
+ENTITY videobrain_io IS
+  PORT (
+    clk      : IN  std_logic;
+    reset_na : IN  std_logic;
+
+    -- internal f8 ports 0/1 expose active-low pins, already inverted by f8_cpu
+    port_a_n    : IN  uv8;
+    port_b_n    : IN  uv8;
+    port_b_wr   : IN  std_logic;
+    port_b_in_n : OUT uv8;
+
+    kbd_matrix : IN std_logic_vector(35 DOWNTO 0);
+    joy_fire   : IN std_logic_vector(3 DOWNTO 0);
+    uv_kbd     : IN std_logic;
+
+    key_latch     : OUT uv8;
+    joy_enable    : OUT std_logic;
+    accessory_p5  : OUT std_logic;
+    accessory_p1  : OUT std_logic;
+
+    audio_code : OUT std_logic_vector(1 DOWNTO 0);
+    audio_stb  : OUT std_logic
+    );
+END ENTITY videobrain_io;
+
+ARCHITECTURE rtl OF videobrain_io IS
+  SIGNAL key_latch_l : uv8 := (OTHERS => '0');
+  SIGNAL sound_clk_l : std_logic := '0';
+  SIGNAL joy_enable_l : std_logic := '0';
+  SIGNAL accessory_p5_l : std_logic := '0';
+  SIGNAL accessory_p1_l : std_logic := '0';
+  SIGNAL audio_code_l : std_logic_vector(1 DOWNTO 0) := (OTHERS => '0');
+  SIGNAL audio_stb_l : std_logic := '0';
+BEGIN
+
+  PROCESS (clk, reset_na) IS
+    VARIABLE port_a_v : uv8;
+    VARIABLE port_b_v : uv8;
+  BEGIN
+    IF reset_na = '0' THEN
+      key_latch_l    <= (OTHERS => '0');
+      sound_clk_l    <= '0';
+      joy_enable_l   <= '0';
+      accessory_p5_l <= '0';
+      accessory_p1_l <= '0';
+      audio_code_l   <= (OTHERS => '0');
+      audio_stb_l    <= '0';
+
+    ELSIF rising_edge(clk) THEN
+      audio_stb_l <= '0';
+
+      port_a_v := NOT port_a_n;
+      port_b_v := NOT port_b_n;
+
+      key_latch_l <= port_a_v;
+
+      -- sheet 4: u16 clocks on rising physical i/o-14 and latches i/o-01/00
+      IF port_b_wr = '1' AND sound_clk_l = '0' AND port_b_n(4) = '1' THEN
+        audio_code_l <= std_logic_vector(port_a_n(1 DOWNTO 0));
+        audio_stb_l  <= '1';
+      END IF;
+
+      sound_clk_l    <= port_b_n(4);
+      accessory_p5_l <= port_b_v(5);
+      accessory_p1_l <= port_b_v(6);
+      -- f3850 inverts outputs: enabled when physical i/o-17 is low
+      joy_enable_l   <= port_b_v(7);
+    END IF;
+  END PROCESS;
+
+  PROCESS (key_latch_l, kbd_matrix, joy_fire, uv_kbd) IS
+    VARIABLE rows : std_logic_vector(3 DOWNTO 0);
+  BEGIN
+    rows := joy_fire;
+
+    FOR col IN 0 TO 7 LOOP
+      IF key_latch_l(col) = '1' THEN
+        FOR row IN 0 TO 3 LOOP
+          rows(row) := rows(row) OR kbd_matrix(col * 4 + row);
+        END LOOP;
+      END IF;
+    END LOOP;
+
+    IF uv_kbd = '0' THEN
+      FOR row IN 0 TO 3 LOOP
+        rows(row) := rows(row) OR kbd_matrix(32 + row);
+      END LOOP;
+    END IF;
+
+    port_b_in_n <= NOT unsigned("0000" & rows);
+  END PROCESS;
+
+  key_latch    <= key_latch_l;
+  joy_enable   <= joy_enable_l;
+  accessory_p5 <= accessory_p5_l;
+  accessory_p1 <= accessory_p1_l;
+  audio_code   <= audio_code_l;
+  audio_stb    <= audio_stb_l;
+
+END ARCHITECTURE rtl;
