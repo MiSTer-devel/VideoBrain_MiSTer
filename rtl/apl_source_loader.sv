@@ -10,6 +10,7 @@ module apl_source_loader #(
     input wire [24:0] addr,
     input wire [7:0] data,
     input wire available,
+    input wire music_available,
     input wire symbols,
     input wire input_ready,
     input wire key_accepted,
@@ -207,7 +208,9 @@ always @(posedge clk) begin
                     keys <= 0;
                     frames <= 0;
                     state <= RELEASE_KEY;
-                end else if (event_key >= MUSIC_LOW && event_key <= MUSIC_HIGH) begin
+                end else if ((event_key >= MUSIC_LOW && event_key <= MUSIC_HIGH) ||
+                             (music_available && !symbols &&
+                              (event_key == 33 || event_key == 19 || event_key == 22))) begin
                     bank_gap <= token;
                     frames <= 255;
                     state <= BANK_READY;
@@ -236,9 +239,9 @@ always @(posedge clk) begin
                 if (frame_tick && bank_gap != 0) bank_gap <= bank_gap - 1'b1;
                 if (state == BANK_READY && input_ready) begin
                     case (event_key)
-                        MUSIC_LOW: keys <= 36'd1 << 33;
-                        MUSIC_MIDDLE: keys <= 36'd1 << 19;
-                        MUSIC_HIGH: keys <= 36'd1 << 22;
+                        MUSIC_LOW, 33: keys <= 36'd1 << 33;
+                        MUSIC_MIDDLE, 19: keys <= 36'd1 << 19;
+                        MUSIC_HIGH, 22: keys <= 36'd1 << 22;
                         default: keys <= 0;
                     endcase
                     frames <= 255;

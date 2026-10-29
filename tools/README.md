@@ -31,7 +31,7 @@ ROM path and a separate output path. The Music Teacher patch is experimental
 and suppresses staff rendering. Version 0.4 polls Program 1 input directly
 and services video when the BIOS RAM threshold and video Y permit it, without
 waiting for a field. Minimum octave timing uses ROM-acknowledged bank controls;
-fixed-duration score files retain their encoded switch allowance. Experimental
+ordinary unshifted octave keys also wait for ROM acceptance and release. Experimental
 `--timing score-ready` overlaps acknowledged switches with musical gaps and
 requires the corresponding loader update.
 Hardware validation remains necessary.

@@ -85,6 +85,7 @@ ENTITY videobrain_core IS
     unknown_cart_profile: IN uv8;
     infoman_printer_fix : IN std_logic := '0';
     apl_available : OUT std_logic;
+    music_available : OUT std_logic;
     apl_load_error : OUT std_logic;
     apl_symbols : OUT std_logic := '0';
     apl_input_ready : OUT std_logic := '0';
@@ -356,6 +357,7 @@ BEGIN
       apl_hold       => apl_hold,
       apl_paused     => apl_paused,
       apl_available  => apl_available,
+      music_available => music_available,
       apl_load_error => apl_load_error,
       apl_symbols    => apl_symbols,
       apl_input_ready => apl_input_ready,

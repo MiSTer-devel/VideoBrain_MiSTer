@@ -252,7 +252,7 @@ videobrain_reset reset_control (
 
 wire boot_dl = ioctl_download && (ioctl_index == 16'd0);
 wire source_dl = ioctl_download && (ioctl_index[7:0] == 8'd4);
-wire apl_available, apl_load_error;
+wire apl_available, music_available, apl_load_error;
 wire apl_symbols, source_busy, source_error, source_started, source_complete, source_aborted;
 wire source_enabled = !OSD_STATUS || (status[31] && source_started);
 wire source_music_playback = !status[18] || status[19];
@@ -521,6 +521,7 @@ apl_source_loader source_loader (
 	.addr(ioctl_addr),
 	.data(ioctl_dout),
 	.available(apl_available),
+	.music_available(music_available),
 	.symbols(apl_symbols),
 	.input_ready(apl_input_ready),
 	.key_accepted(apl_key_accepted),
@@ -628,6 +629,7 @@ videobrain_core core
 	.unknown_cart_profile ({5'd0, status[11:9]}),
 	.infoman_printer_fix(status[37]),
 	.apl_available (apl_available),
+	.music_available (music_available),
 	.apl_load_error (apl_load_error),
 	.apl_symbols (apl_symbols),
 	.apl_input_ready (apl_input_ready),

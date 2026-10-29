@@ -60,6 +60,7 @@ BEGIN
       cart_unload => cart_unload, cart_loaded => cart_loaded,
       apl_hold => apl_hold, apl_paused => apl_paused,
       apl_available => apl_available, apl_load_error => apl_error,
+      music_available => OPEN,
       apl_symbols => apl_symbols,
       apl_input_ready => apl_input_ready, apl_key_accepted => apl_key_accepted,
       joy_linear_base => joy_base, joy_linear_step => joy_step

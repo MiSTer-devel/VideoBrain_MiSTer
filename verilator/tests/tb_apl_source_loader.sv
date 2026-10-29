@@ -10,6 +10,7 @@ reg input_ready = 0, key_accepted = 0;
 reg emulate_input = 1;
 integer input_cycles = 0;
 reg music_playback = 0, auto_repeat = 0;
+reg music_available = 0;
 wire busy, error, complete, started, aborted;
 wire [35:0] keys;
 apl_source_loader #(.LINE_FRAMES(3)) dut (.*);
@@ -154,11 +155,12 @@ task check_arccosine;
     $display("Arccosine VBK: all 288 tokens emitted through final NEXT");
 endtask
 
-task check_bank_ready;
+task check_bank_ready(input bit raw_keys);
     emulate_input = 0; input_ready = 0; key_accepted = 0;
+    music_available = raw_keys; symbols = 0;
     presses = 0; frame_tick = 1;
     for (integer bank = 0; bank < 3; bank = bank + 1) begin
-        packet[8 + bank * 3] = 8'hfa + 8'(bank);
+        packet[8 + bank * 3] = raw_keys ? (bank == 0 ? 33 : bank == 1 ? 19 : 22) : 8'hfa + 8'(bank);
         packet[9 + bank * 3] = 1; packet[10 + bank * 3] = 0;
     end
     packet[17] = 29; packet[18] = 5; packet[19] = 2;
@@ -213,14 +215,15 @@ task check_bank_ready;
     while (keys == 0) tick;
     cancel = 1; tick; cancel = 0;
     if (busy || keys != 0 || complete) $fatal(1, "Bank cancel failed");
-    emulate_input = 1; input_ready = 0;
+    emulate_input = 1; input_ready = 0; music_available = 0;
 endtask
 
-task check_bank_gap(input bit late_release);
+task check_bank_gap(input bit late_release, input bit raw_keys);
     emulate_input = 0; input_ready = 1; key_accepted = 0;
+    music_available = raw_keys; symbols = 0;
     presses = 0; frame_tick = 0;
     packet[8] = 29; packet[9] = 2; packet[10] = 0;
-    packet[11] = 8'hfa; packet[12] = 1; packet[13] = 2;
+    packet[11] = raw_keys ? 33 : 8'hfa; packet[12] = 1; packet[13] = 2;
     packet[14] = 30; packet[15] = 2; packet[16] = 2;
     init_packet(9); packet[3] = "2";
     send_packet(17, -1);
@@ -249,7 +252,22 @@ task check_bank_gap(input bit late_release);
     if (keys != (36'd1 << 30)) $fatal(1, "Ready note missed score deadline");
     frame_tick = 1; finish_entry;
     if (error || !complete || presses != 3) $fatal(1, "Octave overlap lost a key");
-    emulate_input = 1; input_ready = 0;
+    emulate_input = 1; input_ready = 0; music_available = 0;
+endtask
+
+task check_shifted_bank_keys;
+    music_available = 1; symbols = 1; presses = 0;
+    input_ready = 0; key_accepted = 0; frame_tick = 1;
+    packet[8] = 33; packet[11] = 19; packet[14] = 22;
+    for (integer n = 8; n < 17; n = n + 3) begin
+        packet[n + 1] = 2; packet[n + 2] = 2;
+    end
+    init_packet(9); packet[3] = "2";
+    send_packet(17, -1); finish_entry;
+    if (error || !complete || presses != 3 || observed[0] != 33 ||
+        observed[1] != 19 || observed[2] != 22)
+        $fatal(1, "Shifted music commands used bank handshake");
+    music_available = 0; symbols = 0;
 endtask
 
 task check_modes(input bit initial_mode);
@@ -496,9 +514,12 @@ initial begin
     if (busy || keys != 0 || complete) $fatal(1, "Repeat OSD cancel failed");
     enabled = 1; auto_repeat = 0; music_playback = 0;
 
-    check_bank_ready;
-    check_bank_gap(0);
-    check_bank_gap(1);
+    for (integer raw_keys = 0; raw_keys < 2; raw_keys = raw_keys + 1) begin
+        check_bank_ready(1'(raw_keys));
+        check_bank_gap(0, 1'(raw_keys));
+        check_bank_gap(1, 1'(raw_keys));
+    end
+    check_shifted_bank_keys;
     check_modes(0);
     check_modes(1);
     for (integer explicit_modes = 0; explicit_modes < 2; explicit_modes = explicit_modes + 1) begin

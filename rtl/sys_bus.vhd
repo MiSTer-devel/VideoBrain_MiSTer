@@ -54,6 +54,7 @@ ENTITY sys_bus IS
     apl_hold : OUT std_logic;
     apl_paused : IN std_logic := '0';
     apl_available : OUT std_logic;
+    music_available : OUT std_logic;
     apl_load_error : OUT std_logic;
     apl_symbols : OUT std_logic := '0';
     apl_input_ready : OUT std_logic := '0';
@@ -215,6 +216,7 @@ BEGIN
 
   cart_loaded <= cart_loaded_l;
   apl_available <= '1' WHEN cart_auto_type = to_unsigned(CART_COMPLANG, 8) ELSE '0';
+  music_available <= music_input;
   -- ed01 and the static-staff patches share the bank acceptance hook
   music_input <= '1' WHEN cart_loaded_l = '1' AND dl_cart = '0' AND
     cart_size = to_unsigned(2048, cart_size'length) AND

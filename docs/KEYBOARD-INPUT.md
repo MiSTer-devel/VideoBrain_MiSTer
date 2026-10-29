@@ -76,9 +76,11 @@ The manual's Middle layout uses S for C4, D/F/G/H/J/K for D4..B4 and L for C5. L
 
 The converter keeps the current octave bank while it contains the next pitch. Choose one of two music timing styles. Both default to `--min-hold 2 --gap 2`:
 
-- **Score timing** (`--timing score`, default) preserves tempo by fitting each octave switch into preceding rests or release gaps, then shortening the preceding held note if needed. Switches use two held and two released fields. At least two held and two released note fields remain with the defaults. If insufficient time remains, the converter warns and adds the excess delay. A switch before the first note adds startup time.
+- **Score timing** (`--timing score`, default) fits a four-field octave-switch allowance into preceding rests or release gaps, then shortens the preceding held note if needed. At least two held and two released note fields remain with the defaults. If insufficient time remains, the converter warns and adds the excess delay. A switch before the first note adds startup time.
 - **Acknowledged score timing** (`--timing score-ready`, experimental) starts each octave switch inside the preceding note's key-off gap or the end of a rest. It uses ROM acceptance and release signals, and starts the next note when both the musical gap and the handshake are complete. Held notes are not shortened. This requires a core supporting overlap gaps on FA/FB/FC events; use the Better Playback patch for faster ROM input handling. A handshake that exceeds the gap still delays the next note.
 - **Note timing** (`--timing note`) preserves note/rest durations and adds the minimum ROM-acknowledged octave-switch time. The loader presses the bank key when the ROM is ready, releases it when accepted, then waits for confirmed readiness before continuing. Each stage times out after 255 fields.
+
+With a recognized Music Teacher 1 cartridge, unshifted Z/SPACE/V events also use the octave handshake, including older fixed-duration files. The loader waits for readiness, acceptance and release instead of the encoded hold time; the encoded gap runs concurrently. A slow switch can delay the next note. Timeout stops playback with an error. Shifted Record and Erase commands retain their encoded timing.
 
 Timing is rounded to video fields; the key-off gap is included in each note's duration.
 
