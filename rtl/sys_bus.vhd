@@ -83,7 +83,7 @@ ARCHITECTURE rtl OF sys_bus IS
   END FUNCTION;
 
   FUNCTION is_standard_cart(crc : uv32; size : unsigned) RETURN boolean IS
-    VARIABLE hash : uv32 := NOT crc;
+    CONSTANT hash : uv32 := NOT crc;
   BEGIN
     IF size = to_unsigned(16#0800#, size'length) THEN
       RETURN hash = CART_CRC_MUSICTEACHER1 OR

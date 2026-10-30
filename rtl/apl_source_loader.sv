@@ -101,7 +101,7 @@ always @(posedge clk) begin
     end else if (download && !download_d) begin
         state <= RECEIVE;
         bad <= wr && (addr != 0 || data != "V");
-        received <= wr ? 1 : 0;
+        received <= wr ? 13'd1 : 13'd0;
         length <= 0;
         expected_crc <= 0;
         crc <= 16'hffff;
@@ -156,7 +156,7 @@ always @(posedge clk) begin
                                 if (timed) begin
                                     if ((payload_phase == 0 && data > 35 && data < MODE_LETTERS) ||
                                         (payload_phase == 1 && data == 0)) bad <= 1;
-                                    payload_phase <= payload_phase == 2 ? 0 : payload_phase + 1'b1;
+                                    payload_phase <= payload_phase == 2 ? 2'd0 : payload_phase + 1'b1;
                                 end else if (!valid_key(data)) bad <= 1;
                             end
                         endcase
@@ -224,7 +224,7 @@ always @(posedge clk) begin
                         end
                         MUSIC_REPLAY: keys <= playback ? 36'd0 : 36'd1 << 12;
                         MUSIC_RECORD: begin
-                            keys <= 36'd1 << (playback ? 7 : 33);
+                            keys <= 36'd1 << (playback ? 6'd7 : 6'd33);
                             recording <= !playback;
                             music_notes <= 0;
                         end

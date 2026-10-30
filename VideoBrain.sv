@@ -483,7 +483,7 @@ always @(posedge clk_sys) begin
 				tape_info_frames <= 0;
 			end else if (joy_calibrating || (tape_busy && !tape_error)) begin
 				if (tape_info_frames == 59) begin
-					info <= joy_calibrating ? 9 : 5;
+					info <= joy_calibrating ? 8'd9 : 8'd5;
 					info_req <= 1;
 					tape_info_frames <= 0;
 				end else tape_info_frames <= tape_info_frames + 1'b1;
