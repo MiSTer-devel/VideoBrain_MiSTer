@@ -13,6 +13,9 @@ ENTITY sys_bus IS
     reset_na : IN  std_logic;
     power_cycle : IN std_logic := '0';
     power_busy : OUT std_logic := '0';
+    clock_seed_we : IN std_logic := '0';
+    clock_seed_addr : IN unsigned(9 DOWNTO 0) := (OTHERS => '0');
+    clock_seed_data : IN uv8 := (OTHERS => '0');
 
     ext_addr  : IN  unsigned(13 DOWNTO 0);
     ext_rd    : IN  std_logic;
@@ -219,7 +222,7 @@ BEGIN
     (NOT cart_crc = CART_CRC_MUSICTEACHER1 OR NOT cart_crc = x"F4390144" OR
      NOT cart_crc = x"3BE4D855" OR NOT cart_crc = x"7A568961" OR
      NOT cart_crc = x"9E59066B" OR NOT cart_crc = x"7CFE495D" OR
-     NOT cart_crc = x"99CC38F2") ELSE '0';
+     NOT cart_crc = x"99CC38F2" OR NOT cart_crc = x"6FD7A98B") ELSE '0';
   -- bank d input loop: release verified at 3c14, new key accepted at 3c20
   apl_key_accepted <= '1' WHEN reset_na = '1' AND
     ext_rd = '1' AND ext_fetch = '1' AND
@@ -237,13 +240,15 @@ BEGIN
         IF ext_rd = '1' AND ext_fetch = '1' THEN
           IF ext_addr = x"14D8" OR ext_addr = x"158F" OR
              ((NOT cart_crc = x"7A568961" OR NOT cart_crc = x"9E59066B" OR
-               NOT cart_crc = x"7CFE495D" OR NOT cart_crc = x"99CC38F2") AND
+               NOT cart_crc = x"7CFE495D" OR NOT cart_crc = x"99CC38F2" OR
+               NOT cart_crc = x"6FD7A98B") AND
               ext_addr = x"13B5") THEN
             apl_input_ready <= '1';
           ELSIF ext_addr = x"10A1" OR ext_addr = x"1154" OR
                 ext_addr = x"14C8" OR ext_addr = x"14E4" OR
                 ((NOT cart_crc = x"7A568961" OR NOT cart_crc = x"9E59066B" OR
-                  NOT cart_crc = x"7CFE495D" OR NOT cart_crc = x"99CC38F2") AND
+                  NOT cart_crc = x"7CFE495D" OR NOT cart_crc = x"99CC38F2" OR
+                  NOT cart_crc = x"6FD7A98B") AND
                  ext_addr = x"13C0") THEN
             apl_input_ready <= '0';
           END IF;
@@ -302,10 +307,11 @@ BEGIN
                                a_eff <= to_unsigned(ADDR_UV201_HI, 14) ELSE '0';
   uv_reg_wdata <= bus_wdata;
 
-  sys_ram_we <= bus_wr AND to_std_logic(a_eff >= to_unsigned(ADDR_RAM_LO, 14) AND
-                                      a_eff <= to_unsigned(ADDR_RAM_HI, 14));
-  sys_ram_wa <= a_eff(9 DOWNTO 0);
-  sys_ram_wdata <= bus_wdata;
+  sys_ram_we <= clock_seed_we OR (bus_wr AND
+    to_std_logic(a_eff >= to_unsigned(ADDR_RAM_LO, 14) AND
+                 a_eff <= to_unsigned(ADDR_RAM_HI, 14)));
+  sys_ram_wa <= clock_seed_addr WHEN clock_seed_we = '1' ELSE a_eff(9 DOWNTO 0);
+  sys_ram_wdata <= clock_seed_data WHEN clock_seed_we = '1' ELSE bus_wdata;
 
   PROCESS (clk, reset_na) IS
   BEGIN

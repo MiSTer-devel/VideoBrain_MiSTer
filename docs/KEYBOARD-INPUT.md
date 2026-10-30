@@ -6,6 +6,16 @@ See [converter commands and options](../tools/README.md#keyboard-files).
 
 `--profile apl` is the default. Text profiles require `--start-mode`: `letters` means lower/unshifted; `symbols` means upper/shifted. Generated VBK2 files establish that mode and request later mode changes using the tracked SHIFT latch. Music synchronizes its own mode. Regenerate older files to use this behavior; updated files require a core supporting F8/F9 mode controls. The physical `keys` profile retains raw SHIFT toggles.
 
+## Set built-in clock from RTC
+
+With no cartridge inserted, load `examples/clock-from-rtc.vbk` from **Keyboard > Load Keyboard File**. It selects CLOCK, enters the host local date and time, then starts the clock. The script is intended for the built-in clock screen, not cartridges.
+
+`examples/clock-from-rtc-v2.vbk` is an alternative for a clock that has not yet been set. It selects CLOCK, ensures upper SHIFT, enters the RTC digits, sends one additional 0 to advance to the start screen, ensures lower SHIFT, then presses G. The source uses QUESTION for the physical 0/? key. It sends no S and inserts no wait. The revised file requires hardware verification.
+
+The new `VBK3` format accepts `RTC [hold gap]` in the physical-keys converter. It expands to the 16 physical numeric keys for `YYYYMMDDWWHHMMSS` when reached. `WW` is Monday=01 through Sunday=07. Existing VBK1/VBK2 files are unchanged; an older core rejects VBK3.
+
+MiSTer supplies RTC once at core startup. The loader advances it locally and allows roughly four seconds for the numeric keypresses. The host RTC must be set; this feature does not synchronize time over the network itself. Clock setting on hardware still needs verification.
+
 ## APL/S source entry
 
 Boot the Computational Language cartridge and wait for its input prompt before loading a `.vbk`. Once the OSD closes, the core types the listing. Canceling leaves partial input; reset or reload the cartridge before retrying a partial listing.

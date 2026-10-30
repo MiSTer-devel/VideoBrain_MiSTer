@@ -100,10 +100,11 @@ localparam CONF_STR = {
 	"P2F0,BIN,Load BIOS;",
 	"P2F2,BIN,Load Expander 1 ROM;",
 	"P2-;",
-	"P2O[32],UART Output,Modem,Printer;",
-	"P2O[11:9],Mapper Fallback,Standard,Timeshare,Money Minder,APL/S,Info. Manager;",
-	"P2O[24],Reset on Cartridge Load,On,Off;",
 	"P2O[22],Info Messages,On,Off;",
+	"P2O[24],Reset on Load,On,Off;",
+	"P2O[44],BIOS Clock,Manual,Auto (RTC);",
+	"P2O[32],UART Output,Modem,Printer;",	
+	"P2O[11:9],Mapper Fallback,Standard,Timeshare,Money Minder,APL/S,Info. Manager;",
 	"P2-;",
 	"P2T[27],Master Control (Soft Reset);",
 	"-;",
@@ -118,6 +119,9 @@ localparam CONF_STR = {
 
 wire   [1:0] buttons;
 wire [127:0] status;
+wire [64:0] RTC;
+wire [55:0] rtc_time;
+wire rtc_time_valid;
 wire joystick_connected = ~status[5];
 wire cart_loaded;
 wire  [10:0] ps2_key;
@@ -180,6 +184,7 @@ hps_io #(.CONF_STR(CONF_STR), .CONF_STR_BRAM(1), .VDNUM(3)) hps_io
 
 	.buttons(buttons),
 	.status(status),
+	.RTC(RTC),
 	.status_in(128'd0),
 	.status_set(1'b0),
 	.status_menumask(menu_mask),
@@ -543,6 +548,9 @@ apl_source_loader source_loader (
 	.auto_repeat(status[19]),
 	.enabled(source_enabled),
 	.cancel(|kbd_matrix),
+	.rtc(RTC),
+	.rtc_time(rtc_time),
+	.rtc_time_valid(rtc_time_valid),
 	.busy(source_busy),
 	.started(source_started),
 	.complete(source_complete),
@@ -580,6 +588,9 @@ videobrain_core core
 	.clk        (clk_sys),
 	.reset_na   (~reset),
 	.power_cycle(power_cycle),
+	.rtc_clock_enable(status[44]),
+	.rtc_time_valid(rtc_time_valid),
+	.rtc_time(rtc_time),
 	.timing_reset_na(~system_reset),
 	.progressive(progressive),
 

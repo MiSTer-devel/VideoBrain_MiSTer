@@ -20,6 +20,9 @@ ENTITY videobrain_core IS
     power_cycle : IN std_logic := '0';
     timing_reset_na : IN std_logic := '0';
     progressive : IN std_logic := '0';
+    rtc_clock_enable : IN std_logic := '0';
+    rtc_time_valid : IN std_logic := '0';
+    rtc_time : IN unsigned(55 DOWNTO 0) := (OTHERS => '0');
 
     kbd_matrix : IN std_logic_vector(35 DOWNTO 0);
     joy_fire   : IN std_logic_vector(3 DOWNTO 0);
@@ -173,6 +176,13 @@ ARCHITECTURE rtl OF videobrain_core IS
   SIGNAL int_req    : std_logic;
   SIGNAL int_vector : uv16;
   SIGNAL int_ack    : std_logic;
+  SIGNAL clock_seed_phase : natural RANGE 0 TO 7 := 0;
+  SIGNAL clock_seed_done, clock_boot_ready : std_logic := '0';
+  SIGNAL clock_snapshot : unsigned(55 DOWNTO 0) := (OTHERS => '0');
+  SIGNAL clock_seed_we : std_logic;
+  SIGNAL clock_ram_addr : unsigned(9 DOWNTO 0);
+  SIGNAL clock_ram_data, clock_cpu_data : uv8;
+  SIGNAL clock_cpu_addr : unsigned(5 DOWNTO 0);
   SIGNAL ext_int    : std_logic;
   SIGNAL yint_irq : std_logic;
   SIGNAL uv_current_y : unsigned(8 DOWNTO 0);
@@ -186,7 +196,71 @@ BEGIN
   machine_reset_na <= reset_na AND NOT power_busy;
 
   apl_paused <= '0';
-  cpu_ce <= cpu_ce_raw;
+  cpu_ce <= cpu_ce_raw WHEN clock_seed_phase = 0 ELSE '0';
+
+  -- Seed after BIOS initialization, before cartridge dispatch or a later clock call.
+  PROCESS (clk, machine_reset_na) IS
+  BEGIN
+    IF machine_reset_na = '0' THEN
+      clock_seed_phase <= 0;
+      clock_seed_done <= '0';
+      clock_boot_ready <= '0';
+    ELSIF rising_edge(clk) THEN
+      IF clock_seed_phase /= 0 THEN
+        IF clock_seed_phase = 7 THEN
+          clock_seed_phase <= 0;
+          clock_seed_done <= '1';
+        ELSE
+          clock_seed_phase <= clock_seed_phase + 1;
+        END IF;
+      ELSIF ext_rd = '1' AND romc = ROMC_00 THEN
+        IF ext_addr = x"003C" THEN clock_boot_ready <= '1'; END IF;
+        IF rtc_clock_enable = '1' AND rtc_time_valid = '1' AND clock_seed_done = '0' AND
+           (ext_addr = x"003C" OR (clock_boot_ready = '1' AND ext_addr = x"024D")) THEN
+          clock_snapshot <= rtc_time;
+          clock_seed_phase <= 1;
+        END IF;
+      END IF;
+    END IF;
+  END PROCESS;
+
+  clock_seed_we <= '1' WHEN clock_seed_phase /= 0 ELSE '0';
+  PROCESS (ALL) IS
+  BEGIN
+    clock_ram_addr <= to_unsigned(16#3E1#, 10);
+    clock_ram_data <= x"AA";
+    clock_cpu_addr <= to_unsigned(22, 6);
+    clock_cpu_data <= x"80";
+    CASE clock_seed_phase IS
+      WHEN 1 =>
+        clock_ram_addr <= to_unsigned(16#3EC#, 10);
+        clock_ram_data <= clock_snapshot(23 DOWNTO 16);
+        clock_cpu_addr <= to_unsigned(21, 6);
+        clock_cpu_data <= x"3C";
+      WHEN 2 =>
+        clock_ram_addr <= to_unsigned(16#3ED#, 10);
+        IF clock_snapshot(55 DOWNTO 48) = 0 THEN clock_ram_data <= x"06";
+        ELSE clock_ram_data <= clock_snapshot(55 DOWNTO 48) - 1; END IF;
+        clock_cpu_addr <= to_unsigned(23, 6);
+        clock_cpu_data <= clock_snapshot(7 DOWNTO 0);
+      WHEN 3 =>
+        clock_ram_addr <= to_unsigned(16#3EE#, 10);
+        clock_ram_data <= clock_snapshot(31 DOWNTO 24);
+        clock_cpu_addr <= to_unsigned(63, 6);
+        clock_cpu_data <= clock_snapshot(15 DOWNTO 8);
+      WHEN 4 =>
+        clock_ram_addr <= to_unsigned(16#3EF#, 10);
+        IF clock_snapshot(39 DOWNTO 32) = x"10" THEN clock_ram_data <= x"09";
+        ELSE clock_ram_data <= clock_snapshot(39 DOWNTO 32) - 1; END IF;
+      WHEN 5 =>
+        clock_ram_addr <= to_unsigned(16#3F0#, 10);
+        clock_ram_data <= clock_snapshot(47 DOWNTO 40);
+      WHEN 6 =>
+        clock_ram_addr <= to_unsigned(16#3F1#, 10);
+        clock_ram_data <= x"20";
+      WHEN OTHERS => NULL;
+    END CASE;
+  END PROCESS;
 
   u_cpu : ENTITY work.f8_cpu
     PORT MAP (
@@ -204,6 +278,9 @@ BEGIN
       clk      => clk,
       ce       => cpu_ce,
       power_cycle => power_cycle,
+      clock_seed_we => clock_seed_we,
+      clock_seed_addr => clock_cpu_addr,
+      clock_seed_data => clock_cpu_data,
       reset_na => machine_reset_na,
       intreq   => int_req,
       acco     => OPEN,
@@ -317,6 +394,9 @@ BEGIN
 
   u_sys_bus : ENTITY work.sys_bus
     PORT MAP (
+      clock_seed_we => clock_seed_we,
+      clock_seed_addr => clock_ram_addr,
+      clock_seed_data => clock_ram_data,
       power_cycle => power_cycle, power_busy => power_busy,
       clk            => clk,
       reset_na       => machine_reset_na,

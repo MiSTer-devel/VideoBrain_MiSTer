@@ -28,8 +28,9 @@ ROMs and firmware are not bundled.
 
 `patch_music_teacher.py` and `patch_infoman_printer.py` each take an original
 ROM path and a separate output path. The Music Teacher patch is experimental
-and suppresses staff rendering. Version 0.4 polls Program 1 input directly
-and services video when the BIOS RAM threshold and video Y permit it, without
+and suppresses staff rendering. Version 0.5 corrects G#2 and C2 tuning while
+preserving or improving their octaves, fifths and fourths. It polls Program 1
+input directly and services video when the BIOS RAM threshold and video Y permit it, without
 waiting for a field. Minimum octave timing uses ROM-acknowledged bank controls;
 ordinary unshifted octave keys also wait for ROM acceptance and release. Experimental
 `--timing score-ready` overlaps acknowledged switches with musical gaps and
@@ -46,6 +47,7 @@ Convert APL/S input, text, physical keys or Music Teacher MML to `.vbk`:
 python3 tools/keyboard_input.py program.txt program.vbk
 python3 tools/keyboard_input.py text.txt text.vbk --profile keyboard --start-mode letters
 python3 tools/keyboard_input.py keys.txt keys.vbk --profile keys
+python3 tools/keyboard_input.py examples/clock-from-rtc.txt examples/clock-from-rtc.vbk --profile keys
 python3 tools/keyboard_input.py music.mml music.vbk --profile music --start-mode letters
 ```
 

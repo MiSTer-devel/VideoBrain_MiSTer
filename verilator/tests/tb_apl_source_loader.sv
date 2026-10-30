@@ -11,6 +11,9 @@ reg emulate_input = 1;
 integer input_cycles = 0;
 reg music_playback = 0, auto_repeat = 0;
 reg music_available = 0;
+reg [64:0] rtc = 0;
+wire [55:0] rtc_time;
+wire rtc_time_valid;
 wire busy, error, complete, started, aborted;
 wire [35:0] keys;
 apl_source_loader #(.LINE_FRAMES(3)) dut (.*);
@@ -363,6 +366,50 @@ task check_music_limit(input integer notes, input bit playback_mode, input bit r
     auto_repeat = 0; music_playback = 0;
 endtask
 
+task check_rtc_clock;
+    integer fh, count;
+    reg [8*16-1:0] digits;
+    reg [5:0] digit_keys[0:9];
+    digit_keys[0] = 34; digit_keys[1] = 33; digit_keys[2] = 30;
+    digit_keys[3] = 26; digit_keys[4] = 29; digit_keys[5] = 25;
+    digit_keys[6] = 21; digit_keys[7] = 24; digit_keys[8] = 20;
+    digit_keys[9] = 16;
+    emulate_input = 1; emulate_shift = 1;
+    music_available = 0; auto_repeat = 0; available = 0;
+    frame_tick = 1; enabled = 1; symbols = 0; presses = 0;
+
+    packet[8] = 8'hf7; packet[9] = 8'd8; packet[10] = 8'd8;
+    init_packet(3); packet[3] = "2";
+    send_packet(11, -1);
+    if (!error || busy || presses != 0) $fatal(1, "VBK2 accepted RTC control");
+    packet[3] = "3";
+    send_packet(11, -1); finish_entry;
+    if (!error || complete || presses != 0) $fatal(1, "Missing RTC not rejected");
+
+    // Friday October 30, 2026 23:59:58; entry lead crosses midnight.
+    rtc = {1'b1, 8'h40, 8'h05, 8'h26, 8'h10, 8'h30, 8'h23, 8'h59, 8'h58};
+    tick; tick;
+    if (!dut.rtc_valid) $fatal(1, "RTC snapshot not latched");
+    fh = $fopen("../examples/clock-from-rtc.vbk", "rb");
+    if (!fh) $fatal(1, "Cannot open RTC example");
+    count = $fread(packet, fh);
+    $fclose(fh);
+    if (count != 29 || packet[3] != "3") $fatal(1, "Bad RTC example");
+    presses = 0; symbols = 0;
+    send_packet(count, -1); finish_entry;
+    if (!complete || error || presses != 22)
+        $fatal(1, "RTC script failed, presses %0d error %0b", presses, error);
+    if (observed[0] != 11 || observed[1] != 27 || observed[2] != 11 ||
+        observed[3] != 29 || observed[4] != 11 || observed[21] != 17)
+        $fatal(1, "RTC setup and start keys mismatch");
+    digits = "2026103106000002";
+    for (integer i = 0; i < 16; i = i + 1)
+        if (observed[5+i] != digit_keys[digits[(15-i)*8 +:8] - "0"])
+            $fatal(1, "RTC digit %0d mismatch", i);
+    $display("RTC VBK3: setup, midnight rollover, 16 digits and start verified");
+    available = 1;
+endtask
+
 initial begin
     tick; reset = 0; tick;
     enabled = 1;
@@ -552,6 +599,7 @@ initial begin
     end
 
     check_arccosine;
+    check_rtc_clock;
     $display("APL source loader tests passed");
     $finish;
 end
