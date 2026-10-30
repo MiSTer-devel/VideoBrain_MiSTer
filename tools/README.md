@@ -43,13 +43,13 @@ see [printer capture](../docs/PRINTER.md#capture-a-report-or-session).
 Convert APL/S input, text, physical keys or Music Teacher MML to `.vbk`:
 
 ```sh
-python3 tools/apl_source.py program.txt program.vbk
+python3 tools/keyboard_input.py program.txt program.vbk
 python3 tools/keyboard_input.py text.txt text.vbk --profile keyboard --start-mode letters
 python3 tools/keyboard_input.py keys.txt keys.vbk --profile keys
 python3 tools/keyboard_input.py music.mml music.vbk --profile music --start-mode letters
 ```
 
-`apl_source.py` and the default `keyboard_input.py --profile apl` generate
+The default `keyboard_input.py --profile apl` generates
 APL/S input with NEXT after each nonblank line. `--hold-final` leaves the
 last line unsubmitted. The `text` profile handles the built-in Text screen;
 `keyboard` follows the printed keyboard. Both require `--start-mode`, which
@@ -70,10 +70,14 @@ Copy `examples/blank-printer.vbp` to a new name and mount it under Printer in
 the OSD, or create one with Python:
 
 ```sh
-python3 tools/printer_image.py new session.vbp
-python3 tools/printer_image.py inspect session.vbp
-python3 tools/printer_image.py export session.vbp printer.bin
+python3 tools/new_printer.py session.vbp
+python3 tools/extract_printer.py inspect session.vbp
+python3 tools/extract_printer.py export session.vbp printer.bin
 ```
+
+The creator defaults to a 1 MiB image; `--size BYTES` changes its capacity.
+Omit its filename to create a timestamped name. Creation and extraction are
+independent scripts.
 
 After Stop and Save, wait for Ready and unmount before exporting. Export
 preserves all eight bits and exact payload length. It refuses existing outputs
@@ -90,3 +94,24 @@ path instead.
 
 `new_tape.py`, `trim_tape.py` and `tape_convert.py` create blank images, trim
 unused capacity and convert VBT/WAV waveforms. See [tape images](../docs/TAPE.md).
+
+```sh
+python3 tools/new_tape.py recording.vbt
+python3 tools/trim_tape.py recording.vbt trimmed.vbt
+python3 tools/tape_convert.py to-wav recording.vbt recording.wav
+python3 tools/tape_convert.py to-vbt recording.wav recording.vbt
+```
+
+Each script runs independently and refuses existing outputs. The blank creator
+defaults to 8 MiB and accepts an omitted filename for a timestamped name.
+
+## SHA1 reports
+
+```sh
+python3 tools/sha1.py /path/to/roms
+```
+
+Recursively hashes BIN, VBT, VBK, VBP and ROM files, sorted by title, and writes
+`sha1-hashes-by-title-videobrain_YYYYMMDD.txt` in the selected folder. With no
+folder argument it scans the script's own folder. Use `--overwrite` to replace
+the same day's report. Media and companion notes are unchanged.

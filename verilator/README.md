@@ -82,7 +82,7 @@ The GUI uses the core's PC key aliases: number row and keypad `1234567890` map t
 
 User converters live in [tools](../tools). `--source FILE@FRAME` accepts VBK1 and VBK2, including built-in Text without a cartridge. `make test-apl-source` runs the Python converter tests and RTL loader checks. `make test-music-input` checks the Music Teacher readiness hooks using the original ROM. Set `MT1_PATCHED_ROM=/path/to/modified.bin` to check an optional modified ROM too.
 
-`make replay-clock-source` uses the bundled Price Clock keyboard file. `make capture-apl-save` and `make replay-apl-tape` generate keyboard files with `../tools/apl_source.py`.
+`make replay-clock-source` uses the bundled Price Clock keyboard file. `make capture-apl-save` and `make replay-apl-tape` generate keyboard files with `../tools/keyboard_input.py`.
 
 ### Keyboard file formats
 

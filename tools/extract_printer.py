@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-"""Create, inspect and export append-only VBP1 printer images."""
+"""Inspect and extract captured output from VBP1 printer images."""
 import argparse
 import json
-import os
 from pathlib import Path
 import struct
 import sys
@@ -11,7 +10,6 @@ import zlib
 SECTOR = 512
 PAYLOAD = 480
 START, DATA, STOP = 1, 2, 3
-CLEAN, RESET, FRAMING, OVERFLOW, FULL = range(5)
 REASONS = ('clean', 'reset', 'framing', 'overflow', 'full')
 HEADER = struct.Struct('<4sII BB H Q I I')
 
@@ -27,29 +25,6 @@ def superblock(sectors):
     struct.pack_into('<4sIIII', b, 0, b'VBP1', 1, SECTOR, 32, sectors)
     struct.pack_into('<I', b, 28, checksum(b))
     return bytes(b)
-
-
-def record(sequence, session, kind, baud, offset, payload=b'', reason=CLEAN):
-    if len(payload) > PAYLOAD:
-        raise ValueError('record payload too large')
-    b = bytearray(SECTOR)
-    HEADER.pack_into(b, 0, b'VPR1', sequence, session, kind, baud,
-                     len(payload), offset, reason, 0)
-    b[32:32 + len(payload)] = payload
-    struct.pack_into('<I', b, 28, checksum(b))
-    return bytes(b)
-
-
-def create(path, size=1024 * 1024):
-    if size % SECTOR or not 4 * SECTOR <= size <= 16 * 1024 * 1024:
-        raise ValueError('size must be 512-byte aligned, 2048 bytes..16 MiB')
-    with open(path, 'xb') as f:
-        f.write(superblock(size // SECTOR))
-        zero = bytes(SECTOR)
-        for _ in range(size // SECTOR - 1):
-            f.write(zero)
-        f.flush()
-        os.fsync(f.fileno())
 
 
 def inspect(path):
@@ -114,9 +89,6 @@ def inspect(path):
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__)
     sub = p.add_subparsers(dest='command', required=True)
-    new = sub.add_parser('new')
-    new.add_argument('image')
-    new.add_argument('--size', type=int, default=1024 * 1024, help='allocated bytes')
     for command in ('inspect', 'export'):
         a = sub.add_parser(command)
         a.add_argument('image')
@@ -129,9 +101,6 @@ def main(argv=None):
             a.add_argument('--normalize-crlf', action='store_true')
     args = p.parse_args(argv)
     try:
-        if args.command == 'new':
-            create(args.image, args.size)
-            return 0
         sessions, fault = inspect(args.image)
         if args.command == 'export' and args.session is not None:
             sessions = [s for s in sessions if s['id'] == args.session]
@@ -160,7 +129,7 @@ def main(argv=None):
                 print('WARNING: exported verified prefix of incomplete/error capture', file=sys.stderr)
         return 2 if incomplete else 0
     except (OSError, ValueError) as e:
-        print(f'printer_image: {e}', file=sys.stderr)
+        print(f'extract_printer: {e}', file=sys.stderr)
         return 1
 
 

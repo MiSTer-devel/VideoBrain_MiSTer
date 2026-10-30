@@ -1,10 +1,25 @@
 """Remove unused trailing VBT sectors without changing recorded intervals."""
 
 import argparse
+from contextlib import contextmanager
 from pathlib import Path
 import struct
 
-from tape_convert import CLOCK, MAX_TICKS, new_output
+
+CLOCK = 14318180
+MAX_TICKS = 0x7FFFFFFF
+
+
+@contextmanager
+def new_output(path):
+    path = Path(path)
+    output = path.open("xb")
+    try:
+        with output:
+            yield output
+    except BaseException:
+        path.unlink()
+        raise
 
 
 def trim(source, destination):

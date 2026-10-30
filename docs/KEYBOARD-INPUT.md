@@ -4,7 +4,7 @@ Choose **Keyboard > Load Keyboard File** and select a `.vbk`. A keyboard key can
 
 See [converter commands and options](../tools/README.md#keyboard-files).
 
-`--profile apl` is the default and matches `apl_source.py`. Text profiles require `--start-mode`: `letters` means lower/unshifted; `symbols` means upper/shifted. Generated VBK2 files establish that mode and request later mode changes using the tracked SHIFT latch. Music synchronizes its own mode. Regenerate older files to use this behavior; updated files require a core supporting F8/F9 mode controls. The physical `keys` profile retains raw SHIFT toggles.
+`--profile apl` is the default. Text profiles require `--start-mode`: `letters` means lower/unshifted; `symbols` means upper/shifted. Generated VBK2 files establish that mode and request later mode changes using the tracked SHIFT latch. Music synchronizes its own mode. Regenerate older files to use this behavior; updated files require a core supporting F8/F9 mode controls. The physical `keys` profile retains raw SHIFT toggles.
 
 ## APL/S source entry
 

@@ -334,7 +334,7 @@ test-expander1-playback: check-expander1-rom test-expander1 test-tape
 
 capture-apl-save: check-res1-rom check-res2-rom check-apl-rom check-expander1-rom headless
 	@mkdir -p out/expander1/apl-save
-	PYTHONDONTWRITEBYTECODE=1 python3 ../tools/apl_source.py tests/apl_save.txt out/expander1/apl-save/save.vbk
+	PYTHONDONTWRITEBYTECODE=1 python3 ../tools/keyboard_input.py tests/apl_save.txt out/expander1/apl-save/save.vbk
 	$(HL_EXE) \
 		--res1 "$(RES1_ROM)" --res2 "$(RES2_ROM)" --cart "$(APL_ROM)" \
 		--expander1 "$(EXPANDER1_ROM)" \
@@ -347,7 +347,7 @@ capture-apl-save: check-res1-rom check-res2-rom check-apl-rom check-expander1-ro
 
 replay-apl-tape: check-res1-rom check-res2-rom check-apl-rom check-expander1-rom check-apl-tape headless
 	@mkdir -p out/expander1/apl-load
-	PYTHONDONTWRITEBYTECODE=1 python3 ../tools/apl_source.py tests/apl_load.txt out/expander1/apl-load/load.vbk
+	PYTHONDONTWRITEBYTECODE=1 python3 ../tools/keyboard_input.py tests/apl_load.txt out/expander1/apl-load/load.vbk
 	$(HL_EXE) \
 		--res1 "$(RES1_ROM)" --res2 "$(RES2_ROM)" --cart "$(APL_ROM)" \
 		--expander1 "$(EXPANDER1_ROM)" --playback "$(APL_TAPE)" \
@@ -631,7 +631,7 @@ test-printer-infoman-apple: check-res1-rom check-res2-rom check-expander1-rom ch
 
 
 test-printer-tapes: check-expander1-rom test-expander1
-	test -f out/expander1/printer-tape-blank.vbp || python3 ../tools/printer_image.py new out/expander1/printer-tape-blank.vbp --size 32768
+	test -f out/expander1/printer-tape-blank.vbp || python3 ../tools/new_printer.py out/expander1/printer-tape-blank.vbp --size 32768
 	$(GHDL) synth --std=08 --workdir=out/expander1 --out=verilog expander1 > out/expander1/expander1.v
 	$(V) --binary --timing -Wno-fatal -Wno-PROCASSWIRE -Wno-BLKANDNBLK -Wno-PINMISSING \
 		--top-module tb_printer_tapes --Mdir out/expander1/obj_printer_tapes \

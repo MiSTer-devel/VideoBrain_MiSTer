@@ -55,10 +55,10 @@ Regenerate keyboard files from the repository root:
 
 ```sh
 for f in examples/apl-s-manual-chapter-6/*.txt; do
-    python3 tools/apl_source.py "$f"
+    python3 tools/keyboard_input.py "$f"
 done
 ```
 
 Sources were checked against the scanned pages and keyboard files validated
-with `tools/apl_source.py`. Interpreter execution and hardware testing remain
+with `tools/keyboard_input.py`. Interpreter execution and hardware testing remain
 pending.

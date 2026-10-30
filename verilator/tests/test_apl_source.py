@@ -5,7 +5,7 @@ import sys
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools"))
-from apl_source import encode
+from keyboard_input import encode
 
 
 class SourceTests(unittest.TestCase):

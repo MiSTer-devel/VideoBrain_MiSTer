@@ -57,10 +57,10 @@ the tested duplex/echo combinations.
 Run on Linux or a desktop with Python 3.9 or later:
 
 ```sh
-python3 tools/printer_image.py new session.vbp
-python3 tools/printer_image.py inspect session.vbp
-python3 tools/printer_image.py export session.vbp printer.bin
-python3 tools/printer_image.py export session.vbp report.bin \
+python3 tools/new_printer.py session.vbp
+python3 tools/extract_printer.py inspect session.vbp
+python3 tools/extract_printer.py export session.vbp printer.bin
+python3 tools/extract_printer.py export session.vbp report.bin \
   --session 1 --text report.txt --remove-nul --normalize-crlf
 ```
 

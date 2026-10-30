@@ -8,7 +8,7 @@ import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools"))
-from apl_source import encode
+from keyboard_input import encode
 from keyboard_input import MODE_LETTERS, MODE_SYMBOLS, MUSIC_BANKS, MUSIC_RECORD, MUSIC_REPLAY, keyboard_text, music, physical_keys
 
 
