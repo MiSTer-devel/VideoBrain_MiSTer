@@ -101,13 +101,12 @@ ARCHITECTURE rtl OF videobrain_core IS
   SIGNAL machine_reset_na, power_busy : std_logic;
 
   SIGNAL cpu_dr, cpu_dw : uv8;
-  SIGNAL cpu_dv : std_logic;
   SIGNAL romc : uv5;
   SIGNAL tick : std_logic;
   SIGNAL phase : uint4;
   SIGNAL cpu_ce : std_logic;
   SIGNAL smi_ce : std_logic;
-  SIGNAL cpu_ce_raw, apl_hold, apl_paused : std_logic;
+  SIGNAL cpu_ce_raw, apl_paused : std_logic;
 
   SIGNAL ext_addr  : unsigned(13 DOWNTO 0);
   SIGNAL ext_rd    : std_logic;
@@ -121,7 +120,6 @@ ARCHITECTURE rtl OF videobrain_core IS
   SIGNAL brclk_ena_l : std_logic;
   SIGNAL dmareq0 : std_logic;
   SIGNAL line_start_l   : std_logic;
-  SIGNAL hblank_falling : std_logic;
   SIGNAL hblank_rising  : std_logic;
   SIGNAL field_l : std_logic;
   SIGNAL vpos_l  : unsigned(8 DOWNTO 0);
@@ -194,7 +192,7 @@ BEGIN
     PORT MAP (
       dr       => cpu_dr,
       dw       => cpu_dw,
-      dv       => cpu_dv,
+      dv       => OPEN,
       romc     => romc,
       tick     => tick,
       phase    => phase,
@@ -312,7 +310,7 @@ BEGIN
       hpos           => hpos_l,
       vpos           => vpos_l,
       line_start     => line_start_l,
-      hblank_falling => hblank_falling,
+      hblank_falling => OPEN,
       hblank_rising  => hblank_rising,
       busy           => OPEN
       );
@@ -354,7 +352,7 @@ BEGIN
       dl_index       => dl_index,
       cart_unload    => cart_unload,
       cart_loaded    => cart_loaded,
-      apl_hold       => apl_hold,
+      apl_hold       => OPEN,
       apl_paused     => apl_paused,
       apl_available  => apl_available,
       music_available => music_available,

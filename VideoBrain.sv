@@ -229,7 +229,7 @@ wire pll_locked;
 pll pll
 (
 	.refclk(CLK_50M),
-	.rst(0),
+	.rst(1'b0),
 	.outclk_0(clk_sys),
 	.locked(pll_locked)
 );

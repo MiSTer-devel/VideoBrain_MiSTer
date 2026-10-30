@@ -163,19 +163,15 @@ ARCHITECTURE rtl OF sys_bus IS
   SIGNAL cart_cpu_rdata : uv8;
   SIGNAL cart_cpu_sel : std_logic;
 
-  SIGNAL bb_res2_sel   : std_logic;
   SIGNAL bb_res2_addr  : unsigned(10 DOWNTO 0);
   SIGNAL bb_res2_rdata : uv8;
-  SIGNAL bb_ram_sel    : std_logic;
   SIGNAL bb_ram_addr   : unsigned(9 DOWNTO 0);
   SIGNAL bb_ram_rdata  : uv8;
-  SIGNAL bb_cart_sel   : std_logic;
   SIGNAL bb_cart_addr  : unsigned(11 DOWNTO 0);
   SIGNAL bb_cart_rdata : uv8;
   SIGNAL bb_cart_rom_rdata : uv8;
   SIGNAL bb_cart_ram_rdata : uv8;
   SIGNAL bb_cart_ram_sel : std_logic;
-  SIGNAL bb_open_bus   : std_logic;
 
   SIGNAL dl_res1, dl_res2, dl_cart : std_logic;
   SIGNAL cs1, cs2, exp : std_logic;
@@ -548,16 +544,16 @@ BEGIN
     PORT MAP (
       bb_addr     => bb_addr,
       bb_rdata    => bb_rdata,
-      res2_sel    => bb_res2_sel,
+      res2_sel    => OPEN,
       res2_addr   => bb_res2_addr,
       res2_rdata  => bb_res2_rdata,
-      ram_sel     => bb_ram_sel,
+      ram_sel     => OPEN,
       ram_addr    => bb_ram_addr,
       ram_rdata   => bb_ram_rdata,
-      cart_sel    => bb_cart_sel,
+      cart_sel    => OPEN,
       cart_addr   => bb_cart_addr,
       cart_rdata  => bb_cart_rdata,
-      open_bus    => bb_open_bus
+      open_bus    => OPEN
       );
 
   PROCESS (clk) IS
