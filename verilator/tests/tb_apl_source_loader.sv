@@ -218,12 +218,15 @@ task check_bank_ready(input bit raw_keys);
     emulate_input = 1; input_ready = 0; music_available = 0;
 endtask
 
-task check_bank_gap(input bit late_release, input bit raw_keys);
+task check_bank_gap(input bit late_release, input bit raw_keys,
+                    input [7:0] held = 2, input [7:0] gap = 2);
+    integer interval_fields;
+    interval_fields = raw_keys ? int'(held) + int'(gap) : int'(gap);
     emulate_input = 0; input_ready = 1; key_accepted = 0;
     music_available = raw_keys; symbols = 0;
     presses = 0; frame_tick = 0;
     packet[8] = 29; packet[9] = 2; packet[10] = 0;
-    packet[11] = raw_keys ? 33 : 8'hfa; packet[12] = 1; packet[13] = 2;
+    packet[11] = raw_keys ? 33 : 8'hfa; packet[12] = held; packet[13] = gap;
     packet[14] = 30; packet[15] = 2; packet[16] = 2;
     init_packet(9); packet[3] = "2";
     send_packet(17, -1);
@@ -239,17 +242,21 @@ task check_bank_gap(input bit late_release, input bit raw_keys);
     if (!late_release) input_ready = 1;
     repeat (20) tick;
     if (keys != 0) $fatal(1, "Octave overlap shortened score gap");
-    frame_tick = 1; tick; frame_tick = 0; tick;
-    repeat (20) tick;
-    if (keys != 0) $fatal(1, "Octave overlap skipped a score field");
-    frame_tick = 1; tick; frame_tick = 0; tick;
-    repeat (20) tick;
+    for (integer field = 1; field <= interval_fields; field = field + 1) begin
+        frame_tick = 1; tick; frame_tick = 0; tick;
+        repeat (20) tick;
+        if (field < interval_fields && keys != 0)
+            $fatal(1, "Octave switch shortened encoded score interval");
+    end
     if (late_release) begin
         if (keys != 0) $fatal(1, "Score deadline bypassed ROM readiness");
+        repeat (3) begin frame_tick = 1; tick; frame_tick = 0; tick; end
         input_ready = 1;
         repeat (20) tick;
     end
     if (keys != (36'd1 << 30)) $fatal(1, "Ready note missed score deadline");
+    if (press_field[2] - press_field[0] != 2 + interval_fields + (late_release ? 3 : 0))
+        $fatal(1, "Octave switch changed score onset spacing");
     frame_tick = 1; finish_entry;
     if (error || !complete || presses != 3) $fatal(1, "Octave overlap lost a key");
     emulate_input = 1; input_ready = 0; music_available = 0;
@@ -519,6 +526,9 @@ initial begin
         check_bank_gap(0, 1'(raw_keys));
         check_bank_gap(1, 1'(raw_keys));
     end
+    check_bank_gap(0, 1, 255, 255);
+    check_bank_gap(0, 1, 2, 0);
+    check_bank_gap(0, 0, 255, 2);
     check_shifted_bank_keys;
     check_modes(0);
     check_modes(1);

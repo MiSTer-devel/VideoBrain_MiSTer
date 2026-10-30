@@ -42,7 +42,7 @@ reg [11:0] position = 0;
 reg [7:0] memory [0:4095];
 reg [7:0] token;
 reg [7:0] frames = 0;
-reg [7:0] bank_gap = 0;
+reg [8:0] bank_gap = 0;
 reg shifting = 0, shifted = 0;
 reg timed = 0;
 reg playback = 0;
@@ -211,7 +211,9 @@ always @(posedge clk) begin
                 end else if ((event_key >= MUSIC_LOW && event_key <= MUSIC_HIGH) ||
                              (music_available && !symbols &&
                               (event_key == 33 || event_key == 19 || event_key == 22))) begin
-                    bank_gap <= token;
+                    // Physical bank keys retain their full encoded score interval.
+                    bank_gap <= event_key <= MUSIC_HIGH && event_key >= MUSIC_LOW ?
+                                {1'b0, token} : {1'b0, hold_frames} + {1'b0, token};
                     frames <= 255;
                     state <= BANK_READY;
                 end else begin
