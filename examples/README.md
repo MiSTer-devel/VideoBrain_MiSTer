@@ -7,8 +7,6 @@ cartridge ROMs and Expander 1 firmware are supplied separately; see
 | Collection | Contents |
 | --- | --- |
 | [APL/S manual chapter 6](apl-s-manual-chapter-6/README.md) | Source listings and ready-to-load `.vbk` files. |
-| [James Price APL/S games](21-apl_s-games-james-price/README.md) | Source listings and `.vbk` files; redistribution terms pending. |
-| [Price program tapes](price-tape-conversions/README.md) | Trimmed `.vbt` recordings with launch commands in the filenames; redistribution terms pending. |
 | [Save and reload tutorials](saves/README.md) | Money Minder, Information Manager and APL/S working tapes. |
 | [Music](music/README.md) | Music Teacher 1 MML sources and `.vbk` playback files. |
 | [Blank tape](blank-tape.vbt) | Writable image for [tape recording](../docs/TAPE.md). |
