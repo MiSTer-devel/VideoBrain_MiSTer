@@ -70,7 +70,7 @@ Joystick presets select linear delay ranges by cartridge to provide useful cente
 
 The audio filter is tuned against available recordings, including their unknown receiver and capture response. Its band limit also provides alias protection. It is not a component-level recreation of the RF sound chain.
 
-Keyboard files supply timed matrix inputs. Tape images preserve digital recording intervals and replay them at the Expander input. Both retain firmware participation while replacing physical input or storage media. Experimental 240p output changes vertical rollover and can affect joystick measurements across that boundary; native interlaced operation is the baseline.
+Keyboard files supply timed matrix inputs. Tape images preserve digital recording intervals and replay them at the Expander input. Both retain firmware participation while replacing physical input or storage media. Progressive output (240p and line-doubled 480p) changes vertical rollover and can affect joystick measurements across that boundary; native interlaced operation is the baseline.
 
 ## Remaining accuracy work
 

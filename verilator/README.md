@@ -56,6 +56,8 @@ Long full-machine checks remain separate: `test-apl-reload`,
 separately supplied recording. The master suite lists these exclusions.
 Original-machine measurements and MiSTer acceptance tests remain separate.
 
+`make test-video` checks native and progressive timing, staged output selection and application, and uncropped 480p line duplication. It compares pixels, sync and blanking against the source and checks the 189 by 484 active area within the 526-line output raster. The top-level routing test substitutes a passthrough mixer; hardware output still requires MiSTer validation.
+
 `make test-cpu-branches` runs ROM-free GHDL checks for BR7 across all 64 ISAR values and every BT/BF mask across all 32 status-register values, including directly loaded zero/sign combinations. The 4,160 cases use signed displacement boundaries, check branch destinations and operand/fetch cycle lengths, and verify that ISAR or status flags remain unchanged.
 
 `make test-cpu-opcode-timing` checks all 242 documented opcodes against an independent transcription of Fairchild F3850 Table 3 (printed pp. 3-21 through 3-25). Its 968 cases execute the CPU/bus interface with initialized scratchpad, two flag patterns and two ISAR values, checking ROMC order and every short/long cycle duration. It excludes undefined opcodes and external waits. See [timing sources](../docs/TIMING-SOURCES.md) for the source discrepancies and capture limits.
@@ -82,7 +84,7 @@ The GUI uses the core's PC key aliases: number row and keypad `1234567890` map t
 
 User converters live in [tools](../tools). `--source FILE@FRAME` accepts VBK1 and VBK2, including built-in Text without a cartridge. `make test-apl-source` runs the Python converter tests and RTL loader checks. `make test-music-input` checks the Music Teacher readiness hooks using the original ROM. Set `MT1_PATCHED_ROM=/path/to/modified.bin` to check an optional modified ROM too.
 
-`make replay-clock-source` uses the bundled Price Clock keyboard file. `make capture-apl-save` and `make replay-apl-tape` generate keyboard files with `../tools/apl_source.py`.
+`make replay-clock-source` uses the bundled Price Clock keyboard file. `make capture-apl-save` and `make replay-apl-tape` generate keyboard files with `../tools/keyboard_input.py`.
 
 ### Keyboard file formats
 
@@ -92,7 +94,9 @@ The APL/S handshake observes bank D opcode fetches: $3C14 follows the all-keys-u
 
 VBK2 retains the eight-byte VBK1 header, with magic `VBK2`. Count is payload bytes, not event count; CRC is unchanged. Each three-byte event is matrix key 0..35 (or FF for WAIT), held fields 1..255, released fields 0..255. Limit: 4095 bytes / 1365 complete events. Raw SHIFT and function keys are valid in VBK2. APL-only VBK1 remains gated to the recognized Computational Language ROM.
 
-VBK2 also accepts FE for the music Record/No-Record selector (inside shifted mode), and FD for Replay (inside lower mode). The menu setting is latched at download: Record maps FE to Z and FD to T; Playback maps FE to COMMA and FD to a silent wait with the encoded duration. Older cores reject these events. FA/FB/FC select Low/Middle/High with ROM acknowledgment. Their hold/gap bytes are placeholders (the converter emits 1/0); handshake state determines timing. These controls require lower SHIFT, as do physical octave keys. Keyboard > Music Repeat applies to both VBK1 and VBK2 and can be disabled during entry.
+VBK2 also accepts FE for the music Record/No-Record selector (inside shifted mode), and FD for Replay (inside lower mode). The menu setting is latched at download: Record maps FE to Z and FD to T; Playback maps FE to COMMA and FD to a silent wait with the encoded duration. Older cores reject these events. FA/FB/FC select Low/Middle/High with ROM acknowledgment. Their gap byte specifies a musical interval counted concurrently with the handshake; the next event requires both readiness and interval completion. Score-ready files use this to overlap switches with preceding note gaps. Their hold/gap bytes are placeholders (the converter emits 1/0); handshake state determines timing. These controls require lower SHIFT, as do physical octave keys. Keyboard > Music Repeat applies to both VBK1 and VBK2 and can be disabled during entry.
+
+F8/F9 request lower/upper SHIFT using the tracked mode at RAM 0FE2 bit 0. The loader presses SHIFT only when needed, retaining the encoded hold/gap timing. If the mode has not changed by the end of the hold, SHIFT remains held for up to 255 additional fields before an error. Generated text and music use these controls; music finishes in lower mode. Raw SHIFT remains a physical toggle. Older cores reject F8/F9; regenerate older files to use mode synchronization.
 
 ## Joystick simulation
 

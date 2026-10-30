@@ -19,10 +19,12 @@ def main():
             "test_regressions.py",
             "test_tape_convert.py",
             "test_trim_tape.py",
+            "test_standalone_tools.py",
         )
     )
     sys.path.insert(0, str(directory))
-    for name in ("test_roundtrip_and_faults", "test_holes_and_superblock"):
+    for name in ("test_roundtrip_and_faults", "test_holes_and_superblock",
+                 "test_export_selection_and_recovery"):
         suite.addTests(loader.loadTestsFromName(
             "test_printer_image.PrinterImageTests." + name))
     if os.name == "posix":

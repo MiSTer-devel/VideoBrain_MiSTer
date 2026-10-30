@@ -8,9 +8,9 @@ import sys
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools"))
-from apl_source import encode
+from keyboard_input import encode
 from keyboard_input import music
-from printer_image import inspect
+from extract_printer import inspect
 from tape_convert import read_vbt
 
 

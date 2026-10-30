@@ -76,11 +76,11 @@ localparam CONF_STR = {
 	"D4P3O[17:16],Paired Sticks,Off,1+2 / 3+4,1+3 / 2+4 (Doubles);",
 	"P1,Video;",
 	"P1-;",
-	"P1O[21],240p,Off,On;",
+	"P1O[42:41],Output,480i (Original),240p,480p;",
+	"P1T[43],Apply Video Output;",
 	"P1-;",
 	"P1O[122:121],Aspect Ratio,Original,Full Screen,[ARC1],[ARC2];",
 	"P1O[125:123],Scale,Normal,V-Integer,HV-Integer-,HV-Integer+,HV-Integer;",
-	"P1O[4:3],Scandoubler FX,None,HQ2x,CRT 25%,CRT 50%;",
 	"P5,Printer;",
 	"P5-;",
 	"d6P5S2,VBP,Mount Capture Image;",
@@ -116,7 +116,6 @@ localparam CONF_STR = {
 	"V,v",`BUILD_DATE
 };
 
-wire forced_scandoubler;
 wire   [1:0] buttons;
 wire [127:0] status;
 wire joystick_connected = ~status[5];
@@ -177,7 +176,7 @@ hps_io #(.CONF_STR(CONF_STR), .CONF_STR_BRAM(1), .VDNUM(3)) hps_io
 	.EXT_BUS(),
 	.gamma_bus(),
 
-	.forced_scandoubler(forced_scandoubler),
+	.forced_scandoubler(),
 
 	.buttons(buttons),
 	.status(status),
@@ -252,7 +251,7 @@ videobrain_reset reset_control (
 
 wire boot_dl = ioctl_download && (ioctl_index == 16'd0);
 wire source_dl = ioctl_download && (ioctl_index[7:0] == 8'd4);
-wire apl_available, apl_load_error;
+wire apl_available, music_available, apl_load_error;
 wire apl_symbols, source_busy, source_error, source_started, source_complete, source_aborted;
 wire source_enabled = !OSD_STATUS || (status[31] && source_started);
 wire source_music_playback = !status[18] || status[19];
@@ -503,13 +502,28 @@ always @(posedge clk_sys) begin
 	end
 end
 
-// keep field parity
-reg progressive = 0;
+reg [1:0] video_output = 0, requested_output = 0;
+reg apply_video_d = 0, apply_video_pending = 0;
+wire progressive = video_output != 0;
+wire linedouble = video_output == 2;
 reg field_d = 0;
 always @(posedge clk_sys) begin
 	field_d <= vid_field;
-	if (system_reset) progressive <= 0;
-	else if (vid_field != field_d) progressive <= status[21];
+	apply_video_d <= status[43];
+	if (RESET) begin
+		video_output <= 0;
+		requested_output <= 0;
+		apply_video_pending <= 0;
+	end else begin
+		if (vid_field != field_d && apply_video_pending) begin
+			video_output <= requested_output;
+			apply_video_pending <= 0;
+		end
+		if (status[43] && !apply_video_d) begin
+			requested_output <= status[42:41] == 3 ? 2'd0 : status[42:41];
+			apply_video_pending <= 1;
+		end
+	end
 end
 
 apl_source_loader source_loader (
@@ -521,6 +535,7 @@ apl_source_loader source_loader (
 	.addr(ioctl_addr),
 	.data(ioctl_dout),
 	.available(apl_available),
+	.music_available(music_available),
 	.symbols(apl_symbols),
 	.input_ready(apl_input_ready),
 	.key_accepted(apl_key_accepted),
@@ -628,6 +643,7 @@ videobrain_core core
 	.unknown_cart_profile ({5'd0, status[11:9]}),
 	.infoman_printer_fix(status[37]),
 	.apl_available (apl_available),
+	.music_available (music_available),
 	.apl_load_error (apl_load_error),
 	.apl_symbols (apl_symbols),
 	.apl_input_ready (apl_input_ready),
@@ -641,17 +657,39 @@ videobrain_core core
 
 assign CLK_VIDEO = clk_sys;
 
+wire sd_ce, sd_hs, sd_vs, sd_hb, sd_vb;
+wire [7:0] sd_r, sd_g, sd_b;
+videobrain_linedoubler linedoubler (
+	.clk(clk_sys),
+	.reset(RESET | !linedouble),
+	.ce_pix(ce_pix),
+	.r(vid_r), .g(vid_g), .b(vid_b),
+	.hs(vid_hs), .vs(vid_vs), .hb(vid_hb), .vb(vid_vb),
+	.ce_out(sd_ce),
+	.r_out(sd_r), .g_out(sd_g), .b_out(sd_b),
+	.hs_out(sd_hs), .vs_out(sd_vs), .hb_out(sd_hb), .vb_out(sd_vb)
+);
+
+wire out_ce = linedouble ? sd_ce : ce_pix;
+wire out_hs = linedouble ? sd_hs : vid_hs;
+wire out_vs = linedouble ? sd_vs : vid_vs;
+wire out_hb = linedouble ? sd_hb : vid_hb;
+wire out_vb = linedouble ? sd_vb : vid_vb;
+wire [7:0] out_r = linedouble ? sd_r : vid_r;
+wire [7:0] out_g = linedouble ? sd_g : vid_g;
+wire [7:0] out_b = linedouble ? sd_b : vid_b;
+
 video_freak video_freak
 (
 	.CLK_VIDEO(CLK_VIDEO),
-	.CE_PIXEL(ce_pix),
-	.VGA_VS(vid_vs & (progressive | ~vid_field)),
+	.CE_PIXEL(out_ce),
+	.VGA_VS(out_vs & (progressive | ~vid_field)),
 	.HDMI_WIDTH(HDMI_WIDTH),
 	.HDMI_HEIGHT(HDMI_HEIGHT),
 	.VGA_DE(),
 	.VIDEO_ARX(VIDEO_ARX),
 	.VIDEO_ARY(VIDEO_ARY),
-	.VGA_DE_IN(vid_de),
+	.VGA_DE_IN(linedouble ? ~(out_hb | out_vb) : vid_de),
 	.ARX(!ar ? 12'd4 : {10'd0, ar - 2'd1}),
 	.ARY(!ar ? 12'd3 : 12'd0),
 	.CROP_SIZE(12'd0),
@@ -659,28 +697,27 @@ video_freak video_freak
 	.SCALE(status[125:123])
 );
 
-wire [2:0] scale = status[4:3];
-assign VGA_SL = (scale == 3) ? 2'b10 : (scale == 2) ? 2'b01 : 2'b00;
+assign VGA_SL = 2'b00;
 
 video_mixer #(.GAMMA(0)) video_mixer
 (
 	.CLK_VIDEO(CLK_VIDEO),
 	.CE_PIXEL(CE_PIXEL),
-	.ce_pix(ce_pix),
+	.ce_pix(out_ce),
 
-	.scandoubler(scale || forced_scandoubler),
-	.hq2x(scale == 1),
+	.scandoubler(1'b0),
+	.hq2x(1'b0),
 
 	.gamma_bus(),
 
-	.R(vid_r),
-	.G(vid_g),
-	.B(vid_b),
+	.R(out_r),
+	.G(out_g),
+	.B(out_b),
 
-	.HSync(vid_hs),
-	.VSync(vid_vs),
-	.HBlank(vid_hb),
-	.VBlank(vid_vb),
+	.HSync(out_hs),
+	.VSync(out_vs),
+	.HBlank(out_hb),
+	.VBlank(out_vb),
 
 	.VGA_R(VGA_R),
 	.VGA_G(VGA_G),

@@ -60,6 +60,7 @@ BEGIN
       cart_unload => cart_unload, cart_loaded => cart_loaded,
       apl_hold => apl_hold, apl_paused => apl_paused,
       apl_available => apl_available, apl_load_error => apl_error,
+      music_available => OPEN,
       apl_symbols => apl_symbols,
       apl_input_ready => apl_input_ready, apl_key_accepted => apl_key_accepted,
       joy_linear_base => joy_base, joy_linear_step => joy_step
@@ -70,6 +71,7 @@ BEGIN
     FILE image : binary_file;
     VARIABLE byte : character;
     VARIABLE n : natural;
+    VARIABLE fast_music : boolean;
     TYPE lut_t IS ARRAY (0 TO 3, 0 TO 3) OF natural;
     CONSTANT banks : lut_t := ((0, 1, 2, 0), (2, 1, 2, 1),
                               (0, 2, 2, 0), (2, 2, 2, 2));
@@ -406,6 +408,25 @@ BEGIN
     ASSERT cart_loaded = '1' REPORT "Replacement cartridge absent" SEVERITY failure;
     IF music_image /= "" THEN
       load_file(music_image);
+      write_at(16#0FE2#, 1);
+      ASSERT apl_symbols = '1' REPORT "Music shifted mode not observed" SEVERITY failure;
+      write_at(16#2FE2#, 0);
+      ASSERT apl_symbols = '0' REPORT "Music lower mode not observed" SEVERITY failure;
+      addr <= to_unsigned(16#115B#, 14); tick;
+      fast_music := rdata = x"29";
+      addr <= to_unsigned(16#115D#, 14); tick;
+      fast_music := fast_music AND rdata = x"97";
+      fetch <= '0'; addr <= to_unsigned(16#13B5#, 14); tick;
+      ASSERT apl_input_ready = '0' REPORT "Fast music data read signalled ready" SEVERITY failure;
+      fetch <= '1'; tick;
+      ASSERT (apl_input_ready = '1') = fast_music
+        REPORT "Fast music readiness not restricted to v0.3" SEVERITY failure;
+      fetch <= '0'; addr <= to_unsigned(16#13C0#, 14); tick;
+      ASSERT (apl_input_ready = '1') = fast_music
+        REPORT "Fast music data read changed readiness" SEVERITY failure;
+      fetch <= '1'; tick;
+      ASSERT apl_input_ready = '0' REPORT "Fast music key retained readiness" SEVERITY failure;
+      fetch <= '0';
       read_at(16#158F#, 16#18#);
       read_at(16#1154#, 16#72#);
       addr <= to_unsigned(16#14D8#, 14); tick;

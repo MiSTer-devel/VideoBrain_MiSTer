@@ -6,27 +6,38 @@ import struct
 import sys
 import tempfile
 import unittest
+import zlib
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'tools'))
-import printer_image as vbp
+import extract_printer as vbp
+from new_printer import create
+
+
+def record(sequence, session, kind, baud, offset, payload=b''):
+    block = bytearray(512)
+    struct.pack_into('<4sIIBBHQII', block, 0, b'VPR1', sequence, session,
+                     kind, baud, len(payload), offset, 0, 0)
+    block[32:32 + len(payload)] = payload
+    struct.pack_into('<I', block, 28, zlib.crc32(block))
+    return bytes(block)
 
 
 class PrinterImageTests(unittest.TestCase):
     def test_roundtrip_and_faults(self):
         with tempfile.TemporaryDirectory() as d:
             image = Path(d) / 'test.vbp'
-            vbp.create(image, 8192)
+            create(image, 8192)
             with self.assertRaises(FileExistsError):
-                vbp.create(image)
+                create(image)
             raw = bytearray(image.read_bytes())
             data = bytes(range(256)) * 3 + b'\0\r\n\xff'
-            blocks = [vbp.record(1, 1, vbp.START, 0, 0)]
+            blocks = [record(1, 1, vbp.START, 0, 0)]
             offset = 0
             for i in range(0, len(data), 480):
                 part = data[i:i + 480]
-                blocks.append(vbp.record(len(blocks) + 1, 1, vbp.DATA, 0, offset, part))
+                blocks.append(record(len(blocks) + 1, 1, vbp.DATA, 0, offset, part))
                 offset += len(part)
-            blocks.append(vbp.record(len(blocks) + 1, 1, vbp.STOP, 0, offset, bytes(16)))
+            blocks.append(record(len(blocks) + 1, 1, vbp.STOP, 0, offset, bytes(16)))
             raw[512:512 + 512 * len(blocks)] = b''.join(blocks)
             image.write_bytes(raw)
             sessions, fault = vbp.inspect(image)
@@ -45,15 +56,46 @@ class PrinterImageTests(unittest.TestCase):
     def test_holes_and_superblock(self):
         with tempfile.TemporaryDirectory() as d:
             image = Path(d) / 'test.vbp'
-            vbp.create(image, 4096)
+            create(image, 4096)
             raw = bytearray(image.read_bytes())
-            raw[1024:1536] = vbp.record(1, 1, vbp.START, 1, 0)
+            raw[1024:1536] = record(1, 1, vbp.START, 1, 0)
             image.write_bytes(raw)
             self.assertIn('hole', vbp.inspect(image)[1])
             raw[28] ^= 1
             image.write_bytes(raw)
             with self.assertRaises(ValueError):
                 vbp.inspect(image)
+
+    def test_export_selection_and_recovery(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            image = root / 'test.vbp'
+            create(image, 4096)
+            first, second = b'A\0\r\n\xff', b'NEXT'
+            blocks = [record(1, 1, vbp.START, 0, 0),
+                      record(2, 1, vbp.DATA, 0, 0, first),
+                      record(3, 1, vbp.STOP, 0, len(first), bytes(16)),
+                      record(4, 2, vbp.START, 1, len(first)),
+                      record(5, 2, vbp.DATA, 1, len(first), second),
+                      record(6, 2, vbp.STOP, 1, len(first)+len(second), bytes(16))]
+            raw = bytearray(image.read_bytes())
+            raw[512:512 + 512 * len(blocks)] = b''.join(blocks)
+            image.write_bytes(raw)
+            output, text = root / 'raw.bin', root / 'readable.txt'
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                self.assertEqual(vbp.main(['export', str(image), str(output), '--session', '1',
+                                           '--text', str(text), '--remove-nul', '--normalize-crlf']), 0)
+                self.assertEqual(output.read_bytes(), first)
+                self.assertEqual(text.read_bytes(), b'A\n\xff')
+                self.assertEqual(vbp.main(['export', str(image), str(output)]), 1)
+                self.assertEqual(image.read_bytes(), raw)
+                raw[5 * 512 + 32] ^= 1
+                image.write_bytes(raw)
+                recovered = root / 'recovered.bin'
+                self.assertEqual(vbp.main(['export', str(image), str(recovered)]), 1)
+                self.assertFalse(recovered.exists())
+                self.assertEqual(vbp.main(['export', str(image), str(recovered), '--recover']), 2)
+                self.assertEqual(recovered.read_bytes(), first)
 
     def test_rtl_capture(self):
         root = Path(__file__).resolve().parents[1] / 'out/expander1'

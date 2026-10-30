@@ -4,7 +4,7 @@ Choose **Keyboard > Load Keyboard File** and select a `.vbk`. A keyboard key can
 
 See [converter commands and options](../tools/README.md#keyboard-files).
 
-`--profile apl` is the default and matches `apl_source.py`. Text profiles require the starting SHIFT mode explicitly. `letters` means lower/unshifted; `symbols` means upper/shifted. Conversion emits physical SHIFT toggles, without observing another program's latch. If a program resets its mode between prompts, split the input into separate files with the correct starting mode.
+`--profile apl` is the default. Text profiles require `--start-mode`: `letters` means lower/unshifted; `symbols` means upper/shifted. Generated VBK2 files establish that mode and request later mode changes using the tracked SHIFT latch. Music synchronizes its own mode. Regenerate older files to use this behavior; updated files require a core supporting F8/F9 mode controls. The physical `keys` profile retains raw SHIFT toggles.
 
 ## APL/S source entry
 
@@ -56,7 +56,7 @@ APL/S entry waits for the interpreter to accept each key and its release. After 
 | Timeshare | F5 sends Carriage Return; F4 is CONTROL. Shift is held, not toggled; Shift+H types `/`. Hold F4 + Shift and tap D for full duplex or H for half duplex/local echo. Use manual input for its held-key combinations. See [Timeshare setup and keys](EXPANDER1.md#timeshare-over-uart). |
 | Other titles, including Information Manager | Use physical key scripts that follow the program's prompts and SHIFT behavior. |
 
-VBK2 files can be loaded in any program; use the profile and starting mode that match its current screen and key handling.
+VBK2 files can be loaded in any program; use the profile that matches its current screen and key handling. Automatic mode selection requires the standard SHIFT latch; use physical key scripts for programs with custom SHIFT handling.
 
 ## Physical keys
 
@@ -64,7 +64,7 @@ One event per line: `KEY`, `KEY hold gap`, or `WAIT fields`. Times are video fie
 
 ## Music Teacher 1
 
-Select Program 1 / Play-Record manually. Ensure lower SHIFT (no light square), then load an example from `examples/music`. Each generated song erases the previous recording, selects Middle, enters the notes, and ends with No-Record. **Keyboard > Music Mode** selects **Playback** (default) or **Record**. Record enables the cartridge recorder; `--replay` presses REPLAY afterward. Playback keeps Record off and ignores that replay request, playing the file live. Regenerate older music files to use this setting; their physical Record/Replay keys retain their original behavior. After recording, press physical T to replay the stored song again. **Keyboard > Music Repeat** restarts the file from the top until entry is canceled. Repeat forces Playback and grays out Music Mode, preserving the selected mode for when Repeat is turned off. The loader does not wait for the cartridge's Replay routine. Use lower SHIFT and files generated with `--start-mode letters` so each music pass starts in the same mode. This uses the cartridge's own recorder and sound routines; the loader supplies no replacement audio engine.
+Select Program 1 / Play-Record manually, then load an example from `examples/music`. Each generated song synchronizes SHIFT, erases the previous recording, selects Middle, enters the notes, and ends with No-Record and lower SHIFT. **Keyboard > Music Mode** selects **Playback** (default) or **Record**. Record enables the cartridge recorder; `--replay` presses REPLAY afterward. Playback keeps Record off and ignores that replay request, playing the file live. Regenerate older music files to use mode synchronization and the Record/Replay selectors. After recording, press physical T to replay the stored song again. **Keyboard > Music Repeat** restarts the file from the top until entry is canceled. Repeat forces Playback and grays out Music Mode, preserving the selected mode for when Repeat is turned off. The loader does not wait for the cartridge's Replay routine. Each music pass establishes its own SHIFT mode. This uses the cartridge's own recorder and sound routines; the loader supplies no replacement audio engine.
 
 The monophonic MML subset accepts A-G, `#`/`+` sharp, `-` flat, O2-O6, `<`/`>`, T32-T255, L1-L64, per-note lengths, one dot, and R/P rests. Default: O4, T120, L4. C4 means middle C. Range: C2 through B5, checked after accidentals; O6 permits only C- (B5). Chords, ties, loops, voices and other MML commands are rejected. MML conventions follow the [QB64 PLAY notation](https://qb64phoenix.com/qb64wiki/index.php/PLAY).
 
@@ -76,8 +76,11 @@ The manual's Middle layout uses S for C4, D/F/G/H/J/K for D4..B4 and L for C5. L
 
 The converter keeps the current octave bank while it contains the next pitch. Choose one of two music timing styles. Both default to `--min-hold 2 --gap 2`:
 
-- **Score timing** (`--timing score`, default) preserves tempo by fitting each octave switch into preceding rests or release gaps, then shortening the preceding held note if needed. Switches use two held and two released fields. At least two held and two released note fields remain with the defaults. If insufficient time remains, the converter warns and adds the excess delay. A switch before the first note adds startup time.
+- **Score timing** (`--timing score`, default) fits a four-field octave-switch allowance into preceding rests or release gaps, then shortens the preceding held note if needed. At least two held and two released note fields remain with the defaults. If insufficient time remains, the converter warns and adds the excess delay. A switch before the first note adds startup time.
+- **Acknowledged score timing** (`--timing score-ready`, experimental) starts each octave switch inside the preceding note's key-off gap or the end of a rest. It uses ROM acceptance and release signals, and starts the next note when both the musical gap and the handshake are complete. Held notes are not shortened. This requires a core supporting overlap gaps on FA/FB/FC events; use the Better Playback patch for faster ROM input handling. A handshake that exceeds the gap still delays the next note.
 - **Note timing** (`--timing note`) preserves note/rest durations and adds the minimum ROM-acknowledged octave-switch time. The loader presses the bank key when the ROM is ready, releases it when accepted, then waits for confirmed readiness before continuing. Each stage times out after 255 fields.
+
+With a recognized Music Teacher 1 cartridge, unshifted Z/SPACE/V events also use the octave handshake, including older fixed-duration files. The loader waits for readiness, acceptance and release instead of the encoded hold time; the encoded gap runs concurrently. A slow switch can delay the next note. Timeout stops playback with an error. Shifted Record and Erase commands retain their encoded timing.
 
 Timing is rounded to video fields; the key-off gap is included in each note's duration.
 

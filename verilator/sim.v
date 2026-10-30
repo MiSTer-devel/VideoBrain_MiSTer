@@ -61,6 +61,7 @@ module top(
    wire        x_zoom, y_zoom;
    wire        video_en /*verilator public_flat*/;
    wire        apl_symbols;
+   wire        music_available;
    wire        apl_input_ready, apl_key_accepted;
    wire [35:0] source_keys;
    reg source_vs_d = 0;
@@ -70,6 +71,7 @@ module top(
       .clk(clk_sys), .reset(reset), .frame_tick(vid_vs && !source_vs_d),
       .download(ioctl_download && ioctl_index == 5), .wr(ioctl_wr),
       .addr(ioctl_addr), .data(ioctl_dout), .available(apl_available),
+      .music_available(music_available),
       .symbols(apl_symbols), .enabled(1'b1), .cancel(|kbd_matrix),
       .input_ready(apl_input_ready), .key_accepted(apl_key_accepted),
       .music_playback(1'b0), .auto_repeat(1'b0),
@@ -156,6 +158,7 @@ module top(
       .unknown_cart_profile (cart_type),
       .infoman_printer_fix (1'b0),
       .apl_available (apl_available),
+      .music_available (music_available),
       .apl_load_error (apl_load_error),
       .apl_symbols (apl_symbols),
       .apl_input_ready (apl_input_ready),

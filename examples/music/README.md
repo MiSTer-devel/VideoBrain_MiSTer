@@ -11,9 +11,9 @@ Five pieces for Music Teacher 1, with MML sources and ready-to-load VBK files:
 See [sources, arrangement changes and licenses](SOURCES.md). The Blue Danube
 MML and VBK use CC BY-SA 4.0; retain their attribution when sharing them.
 
-Use Music Teacher 1, Program 1 / Play-Record, lower SHIFT (no light square), and **Keyboard > Music Mode > Playback**. Load a `.vbk` from this folder. Loading erases the previous recording. Playback avoids the cartridge recorder's capacity limit.
+Use Music Teacher 1, Program 1 / Play-Record, and **Keyboard > Music Mode > Playback**. Load a `.vbk` from this folder. Files synchronize SHIFT automatically and finish in lower mode. Loading erases the previous recording. Playback avoids the cartridge recorder's capacity limit.
 
-These examples use score timing, with two-field minimum holds and key-off gaps. Octave switches fit into preceding rests or shorten preceding notes to preserve the score tempo. Timing is rounded to video fields; each note includes its key-off gap. An octave switch can add delay if the preceding note or rest is too short to absorb it.
+These examples use score timing, with two-field minimum holds and key-off gaps. Octave-switch allowances fit into preceding rests or shorten preceding notes. The loader waits for ROM acceptance and release at every octave switch, so actual timing depends on cartridge readiness. Timing is rounded to video fields; each note includes its key-off gap.
 
 To regenerate a file from the repository root:
 

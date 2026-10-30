@@ -61,6 +61,155 @@ class PageWrapTests(unittest.TestCase):
                 patch.patch_rom(data)
 
 
+class OctavePollTests(unittest.TestCase):
+    def run_scanner(self, scans, video_ready=False):
+        code = bytearray(65536)
+        code[0x1397:0x13CA] = bytes.fromhex(patch.OCTAVE_POLL)
+        service = bytes.fromhex(patch.VIDEO_SERVICE)
+        code[0x1434:0x1434 + len(service)] = service
+        pc, a, k, flags, dc = 0x1397, 0, 0, 0, 0
+        registers = list(range(12))
+        stack, services = [], []
+        scans = iter(scans)
+        for _ in range(1000):
+            if pc == 0x13D5:  # original popk/pk epilogue
+                pc = stack.pop()
+                continue
+            op = code[pc]
+            pc += 1
+            if op == 0x28:  # pi; BIOS calls return immediately in this model
+                target = int.from_bytes(code[pc:pc + 2], 'big')
+                pc += 2
+                if target in (0x13A0, 0x1434):
+                    link, pc = pc, target
+                elif target == 0x40A9:
+                    stack.append(k)
+                elif target == 0x40BC:
+                    k = stack.pop()
+                elif target == 0x4361:
+                    registers[8] = next(scans)
+                    k = pc
+                elif target == 0x424D:
+                    services.append(pc)
+                    k = pc
+                else:
+                    self.fail(f'unexpected call {target:04x}')
+            elif op == 0x08:  # lr k,p
+                k = link
+            elif op == 0x0C:  # pk
+                pc = k
+            elif op == 0x2B:  # nop; keep readiness hook addresses fixed
+                pass
+            elif op == 0x68:  # lisl 0, as in the BIOS video-service epilogue
+                pass
+            elif op == 0x2A:
+                dc = int.from_bytes(code[pc:pc + 2], 'big')
+                pc += 2
+            elif op == 0x16:
+                self.assertEqual(dc, 0x0FE5)
+                a = 249
+                dc += 1
+            elif op == 0x8D:
+                self.assertEqual(dc, 0x08FB)
+                video_y = 250 if video_ready else 200
+                flags = 2 if video_y >= a else 0
+                dc += 1
+            elif op in (0x70, 0x78):
+                a = op - 0x70
+            elif op == 0x54:
+                registers[4] = a
+            elif op == 0xE8:  # xs r8; F8 S is set for a nonnegative result
+                a ^= registers[8]
+                flags = (1 if a < 128 else 0) | (4 if a == 0 else 0)
+            elif op == 0x34:
+                registers[4] = (registers[4] - 1) & 255
+                flags = 4 if registers[4] == 0 else 0
+            elif op in (0x84, 0x90, 0x91, 0x92, 0x94):
+                offset = code[pc]
+                take = bool(flags & (op & 15))
+                if op & 0x10:
+                    take = not take
+                pc += (offset - 256 if offset > 127 else offset) if take else 1
+            elif op == 0x29:
+                target = int.from_bytes(code[pc:pc + 2], 'big')
+                if target == 0x13D5:  # original popk/pk epilogue
+                    pc = stack.pop()
+                elif target == 0x10A1:
+                    self.assertFalse(stack)
+                    self.assertEqual(registers[4], 0)
+                    self.assertEqual(registers[:4], list(range(4)))
+                    self.assertEqual(registers[5:8], list(range(5, 8)))
+                    self.assertEqual(registers[9:], list(range(9, 12)))
+                    return registers[8], services
+                else:
+                    self.fail(f'unexpected jump {target:04x}')
+            else:
+                self.fail(f'unexpected opcode {op:02x} at {pc - 1:04x}')
+        self.fail('scanner did not return')
+
+    def test_release_and_stable_new_key_without_video_wait(self):
+        key, services = self.run_scanner([0, 0x85, 5])
+        self.assertEqual(key, 5)
+        self.assertEqual(services, [])
+
+    def test_held_octave_and_idle_wait_do_not_wait_for_video(self):
+        key, services = self.run_scanner([19] * 16 + [0] * 17 + [0x85, 5])
+        self.assertEqual(key, 5)
+        self.assertEqual(services, [])
+
+    def test_service_video_when_bios_comparison_is_ready(self):
+        key, services = self.run_scanner([19, 0, 0x85, 5], video_ready=True)
+        self.assertEqual(key, 5)
+        self.assertEqual(len(services), 2)
+
+
+class BankScanTests(unittest.TestCase):
+    def scan(self, key, program=0, shifted=0):
+        code = bytes.fromhex(patch.BANK_SCAN)
+        pc, a, zero = 0, 0, False
+        for _ in range(30):
+            op = code[pc]
+            pc += 1
+            if op == 0x72:
+                a = 2
+            elif op == 0xF5:
+                a &= program
+                zero = a == 0
+            elif op == 0x2A:
+                self.assertEqual(code[pc:pc + 2], bytes.fromhex('0f e2'))
+                pc += 2
+            elif op == 0x16:
+                a = shifted
+            elif op == 0x48:
+                a = key
+            elif op == 0x21:
+                a &= code[pc]
+                zero = a == 0
+                pc += 1
+            elif op == 0x25:
+                zero = a == code[pc]
+                pc += 1
+            elif op in (0x84, 0x94):
+                take = zero if op == 0x84 else not zero
+                pc += code[pc] if take else 1
+            elif op == 0x58:
+                key = a
+            elif op == 0x29:
+                self.assertEqual(code[pc:pc + 2], bytes.fromhex('13 d5'))
+                return key
+            else:
+                self.fail(f'unexpected bank scan opcode {op:02x}')
+        self.fail('bank scan did not return')
+
+    def test_only_unshifted_program_one_octave_keys_skip_new_key_flag(self):
+        for key in (0x92, 0xA0, 0x98):
+            self.assertEqual(self.scan(key), key & 0x7F)
+            self.assertEqual(self.scan(key, shifted=1), key)
+            self.assertEqual(self.scan(key, program=2), key)
+        for key in (0, 0x85, 0x9B, 0x12, 0x20, 0x18):
+            self.assertEqual(self.scan(key), key)
+
+
 class OriginalRomTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -84,7 +233,8 @@ class OriginalRomTests(unittest.TestCase):
         self.assertEqual(len(self.patched), 2048)
         self.assertEqual(self.original[0x4EE:0x500], self.patched[0x4EE:0x500])
         self.assertEqual(self.original[0x4C8:0x4E8], self.patched[0x4C8:0x4E8])
-        self.assertEqual(self.original[0x14E:0x16B], self.patched[0x14E:0x16B])
+        self.assertEqual(self.original[0x14E:0x15B], self.patched[0x14E:0x15B])
+        self.assertEqual(self.original[0x15E:0x16B], self.patched[0x15E:0x16B])
 
     def test_core_recognizes_output(self):
         crc = f'{zlib.crc32(self.patched):08X}'
