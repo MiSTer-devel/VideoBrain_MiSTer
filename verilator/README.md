@@ -56,6 +56,8 @@ Long full-machine checks remain separate: `test-apl-reload`,
 separately supplied recording. The master suite lists these exclusions.
 Original-machine measurements and MiSTer acceptance tests remain separate.
 
+`make test-video` checks native and progressive timing, staged output selection and application, and uncropped 480p line duplication. It compares pixels, sync and blanking against the source and checks the 189 by 484 active area within the 526-line output raster. The top-level routing test substitutes a passthrough mixer; hardware output still requires MiSTer validation.
+
 `make test-cpu-branches` runs ROM-free GHDL checks for BR7 across all 64 ISAR values and every BT/BF mask across all 32 status-register values, including directly loaded zero/sign combinations. The 4,160 cases use signed displacement boundaries, check branch destinations and operand/fetch cycle lengths, and verify that ISAR or status flags remain unchanged.
 
 `make test-cpu-opcode-timing` checks all 242 documented opcodes against an independent transcription of Fairchild F3850 Table 3 (printed pp. 3-21 through 3-25). Its 968 cases execute the CPU/bus interface with initialized scratchpad, two flag patterns and two ISAR values, checking ROMC order and every short/long cycle duration. It excludes undefined opcodes and external waits. See [timing sources](../docs/TIMING-SOURCES.md) for the source discrepancies and capture limits.

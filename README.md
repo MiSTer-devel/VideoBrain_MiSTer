@@ -121,6 +121,10 @@ The Timeshare cartridge can connect to remote text services through MiSTer's HPS
 
 For printer output, select System > UART Output > Printer and use the [Linux file-capture utility](docs/EXPANDER1.md#printer-file-capture). It captures the actual printer stream, including Information Manager's PTR output. Modem is the default for Timeshare; the UART serves one port at a time.
 
+## Video
+
+Select Video > Output, then Apply Video Output. 480i (Original) preserves native timing. 240p uses progressive timing; 480p doubles each progressive line without cropping. Output changes take effect at a field boundary.
+
 ## Tools
 
 See [tools/README.md](tools/README.md) for BIOS and cartridge assembly, keyboard file conversion, and tape utilities.

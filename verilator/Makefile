@@ -379,7 +379,7 @@ test-video: $(TEST_BUILD_ID)
 	$(GHDL) synth --std=08 --workdir=out/video --out=verilog video_test_source > out/video/source.v
 	iverilog -g2012 -i -I$(TEST_INCLUDE) -I.. -s tb_video -o out/video/test \
 		tests/tb_video.sv out/video/source.v ../VideoBrain.sv $(RTL)/videobrain_reset.sv \
-		../sys/video_freak.sv
+		../sys/video_freak.sv $(RTL)/videobrain_linedoubler.sv
 	vvp out/video/test
 
 .PHONY: test-video

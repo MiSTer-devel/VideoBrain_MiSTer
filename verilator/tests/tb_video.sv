@@ -44,7 +44,6 @@ initial begin
     force native.clk_sys = clk;
     force native.reset = reset;
     force native.status = status_native;
-    force native.forced_scandoubler = 1'b0;
     force native.ce_pix = ce;
     force native.vid_field = field;
     force native.vid_de = de;
@@ -58,7 +57,6 @@ initial begin
     force progressive.clk_sys = clk;
     force progressive.reset = reset;
     force progressive.status = status_progressive;
-    force progressive.forced_scandoubler = 1'b0;
     force progressive.ce_pix = p_ce;
     force progressive.vid_field = p_field;
     force progressive.vid_de = p_de;
@@ -77,9 +75,17 @@ integer active_rows = 0, bottom_pixels = 0;
 integer p_last_field_cycle = 0, p_fields = 0, p_active_rows = 0, p_bottom_pixels = 0;
 reg old_field = 0, old_de = 0, old_nmeasure = 0, old_pmeasure = 0;
 reg old_pmode = 0, old_pfield = 0, old_pde = 0, p_field_mode = 0;
+reg [27:0] source_pixels [0:1048575];
+integer source_count = 0, source_line = 0, doubled_pixels = 0, source_base = 0;
+integer output_lines = 0, output_rows = 0, output_frames = 0;
+integer last_output_line = 0, last_output_frame = 0;
+reg source_hs_d = 0, output_hs_d = 0, output_vs_d = 0, output_de_d = 0;
 always @(negedge clk) begin
     cycles = cycles + 1;
     if (!reset) begin
+        if (native.video_mixer.scandoubler || native.video_mixer.hq2x || native.VGA_SL != 0 ||
+            progressive.video_mixer.scandoubler || progressive.video_mixer.hq2x || progressive.VGA_SL != 0)
+            $fatal(1, "Generic scandoubler effects must stay disabled");
         if (field != old_field) begin
             if (fields > 0 && cycles - last_field_cycle != (old_field ? 262 : 263)*912)
                 $fatal(1, "Native field timing changed");
@@ -134,7 +140,7 @@ always @(negedge clk) begin
             if ({nhs, nvs, nde, nr, ng, nb} !== {hs, vs, de, r, g, b})
                 $fatal(1, "Native video routing changed");
         end
-        if (p_fields >= 1 && pce) begin
+        if (p_fields >= 1 && pce && !progressive.linedouble) begin
             if ({phs, pvs, pde, pr, pg, pb} !== {p_hs, p_vs, p_de, p_r, p_g, p_b})
                 $fatal(1, "Progressive video routing changed");
         end
@@ -147,15 +153,63 @@ always @(negedge clk) begin
         if (p_fields >= 2 && p_fields <= 3 && p_y == 50 && p_ce &&
             progressive.video_freak.vsize != 242)
             $fatal(1, "Progressive scaler height must stay at 242");
+        if (!progressive.linedouble) begin
+            source_count = 0;
+            doubled_pixels = 0;
+            source_hs_d = 0;
+        end else begin
+            if (pf !== 0) $fatal(1, "480p must report progressive output");
+            if (p_ce) begin
+                source_pixels[source_count] = {p_hs, p_vs, p_hb, p_vb, p_r, p_g, p_b};
+                if (p_hs && !source_hs_d) source_line = source_count;
+                source_hs_d = p_hs;
+                source_count = source_count + 1;
+            end
+            if (pce) begin
+                if (doubled_pixels == 0) source_base = source_line - 228;
+                if (source_base < 0 || source_base + (doubled_pixels / 456)*228 + doubled_pixels % 228 >= source_count)
+                    $fatal(1, "480p read an incomplete source line");
+                if ({phs, pvs, progressive.video_mixer.HBlank, progressive.video_mixer.VBlank, pr, pg, pb} !==
+                    source_pixels[source_base + (doubled_pixels / 456)*228 + doubled_pixels % 228])
+                    $fatal(1, "480p pixel/blanking mismatch at output pixel %0d", doubled_pixels);
+                if (doubled_pixels > 0 && cycles - last_output_line != 2)
+                    $fatal(1, "480p pixel enable must run every two clocks");
+                last_output_line = cycles;
+                doubled_pixels = doubled_pixels + 1;
+                if (phs && !output_hs_d) output_lines = output_lines + 1;
+                if (pde && !output_de_d) output_rows = output_rows + 1;
+                if (pvs && !output_vs_d) begin
+                    if (output_frames > 1) begin
+                        if (output_lines != 526 || output_rows != 484 || cycles - last_output_frame != 263*912)
+                            $fatal(1, "480p full raster changed: %0d lines, %0d rows", output_lines, output_rows);
+                        if (progressive.video_freak.vsize != 484 || progressive.video_freak.hsize != 189)
+                            $fatal(1, "480p scaler must measure 189 by 484");
+                    end
+                    output_lines = 0;
+                    output_rows = 0;
+                    last_output_frame = cycles;
+                    output_frames = output_frames + 1;
+                end
+                output_hs_d = phs;
+                output_vs_d = pvs;
+                output_de_d = pde;
+            end
+        end
     end
-    if (cycles > 4000000) $fatal(1, "Video test timed out");
+    if (cycles > 6000000) $fatal(1, "Video test timed out");
 end
 
 task request_mode(input bit mode);
 begin
     wait (p_y == 100 && p_x == 100);
     @(negedge clk);
-    status_progressive[21] = mode;
+    status_progressive[42:41] = mode ? 2'd1 : 2'd0;
+    repeat (1000) @(negedge clk);
+    if (progressive.progressive !== !mode)
+        $fatal(1, "Selection applied without Apply Video Output");
+    status_progressive[43] = 1;
+    @(negedge clk);
+    status_progressive[43] = 0;
     #1;
     if (progressive.progressive !== !mode)
         $fatal(1, "Mode changed within active field");
@@ -168,6 +222,8 @@ endtask
 initial begin
     repeat (10) @(negedge clk);
     reset = 0;
+    status_native[4:3] = 3;
+    status_progressive[4:3] = 1;
     if (progressive.progressive !== 0) $fatal(1, "240p must default off");
     request_mode(1);
     wait (p_fields == 4);
@@ -175,12 +231,31 @@ initial begin
         $fatal(1, "Wrong measurement cadence: %0d/%0d", native_measurements, progressive_measurements);
     request_mode(0);
     request_mode(1);
+    wait (p_y == 100 && p_x == 100);
+    @(negedge clk);
+    status_progressive[42:41] = 2;
+    wait (p_field != old_pfield);
+    repeat (3) @(negedge clk);
+    if (progressive.video_output != 1) $fatal(1, "480p selection applied without confirmation");
+    status_progressive[43] = 1;
+    @(negedge clk);
+    status_progressive[43] = 0;
+    // Applying captures the selection even if it changes before the boundary.
+    status_progressive[42:41] = 0;
+    wait (p_field != old_pfield);
+    repeat (3) @(negedge clk);
+    if (progressive.video_output != 2) $fatal(1, "480p did not apply at the boundary");
+    force progressive.system_reset = 1'b1;
+    repeat (10) @(negedge clk);
+    if (progressive.video_output != 2) $fatal(1, "Machine reset changed the applied output");
+    release progressive.system_reset;
+    wait (output_frames == 3);
     wait (p_vs == 0 && p_y == 50);
     @(negedge clk);
     reset = 1;
     repeat (3) @(negedge clk);
     if (progressive.progressive !== 0) $fatal(1, "Reset did not restore native metadata");
-    $display("Video routing, timing and measurement test passed");
+    $display("Video routing, apply controls, 480p pixels, full raster and measurement test passed");
     $finish;
 end
 endmodule

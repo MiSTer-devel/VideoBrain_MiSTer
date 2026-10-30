@@ -34,7 +34,7 @@ BEGIN
               scanline => OPEN, line_start => OPEN,
               hblank_falling => OPEN, hblank_rising => OPEN);
 
-  background <= "000" & field_l & std_logic_vector(y(3 DOWNTO 0));
+  background <= "000" & field_l & std_logic_vector(y(3 DOWNTO 0) XOR x(3 DOWNTO 0));
   render : ENTITY work.uv201_render
     PORT MAP (clk => clk, reset_na => reset_na, brclk_ena => brclk_ena,
               hblank => hblank, vblank => vblank, hpos => x, vpos => y,
