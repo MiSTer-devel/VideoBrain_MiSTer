@@ -3,6 +3,12 @@
 Run commands from the repository root. Python tools require Python 3.9 or
 later; use `python` instead of `python3` where appropriate.
 
+## Telehack
+
+Copy [telehack.sh](telehack.sh) to `/media/fat/Scripts/` and run it from MiSTer's
+Scripts menu. It waits for F5 from Timeshare before connecting; run it again
+to stop. See [Timeshare setup](../docs/EXPANDER1.md#internet-connection).
+
 ## BIOS
 
 Combine the two 2,048-byte BIOS dumps in RES1, RES2 order using a POSIX shell:

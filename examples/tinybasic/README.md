@@ -1,6 +1,6 @@
 # Tiny BASIC checks
 
-Use Tiny BASIC inputfix (CRC32 FC982273) with Mapper Fallback set to
+Use Tiny BASIC cancelfix (CRC32 F3BFF3D3) with Mapper Fallback set to
 4K RAM. Wait for the input prompt, then select Keyboard > Load Keyboard
 File. Load one file at a time with automatic repeat disabled. Keep hands
 off the keyboard while loading. Each file selects letter mode initially
@@ -29,8 +29,11 @@ File 18 fails on stringfix at BACK on an empty input line (WHAT after
 the initial 12). Tests 18 and 18b pass on inputfix CRC32 FC982273:
 12/2 and 3/4. Earlier repeated failures used the wrong ROM.
 File 19 passes on stringfix.
-File 20 fails on inputfix: 2, 3 instead of 14, 3. Cancelfix CRC32
-F3BFF3D3 resets the cancelled-line capacity; hardware validation is pending.
+File 20 fails on inputfix: 2, 3 instead of 14, 3. It passes on cancelfix
+CRC32 F3BFF3D3: 14, 3. This is the current tested variant.
+Files 21 and 22 pass on cancelfix: excess input is discarded and stack
+exhaustion reports SORRY before accepting the next command. The displayed
+line 10 with a question-mark marker is the normal error-location display.
 SPECIAL starts a new input line; old X characters remain on earlier rows.
 Tiny BASIC types comma with SHIFT+N;
 the generic keyboard profile instead sends the ordinary COMMA key,
@@ -61,10 +64,14 @@ experimental bank-only PRINT ROM is not required by this test result.
 | `18b-backspace-boundary.vbk` | 3, then 4; repeated BACK on empty input and deletion back to empty. |
 | `19-multiple-statements.vbk` | 2, 3, DONE, then READY. |
 | `20-cancel-line.vbk` | Cancels 64 X characters with SPECIAL; prints 14, then 3. |
+| `21-input-limit.vbk` | 2, then 3; excess X characters after 71 input characters should be discarded. |
+| `22-stack-limit.vbk` | SORRY on recursive GOSUB, then 3 from the next command. |
 
-Files 04-09, 11-16, 13b, and 19 run NEW and replace the current BASIC program. The loops are
+Files 04-09, 11-16, 13b, 19, and 22 run NEW and replace the current BASIC program. The loops are
 intended to terminate; if interpreter execution fails to finish, use
 MASTER CONTROL and reload the cartridge before continuing.
+File 22 deliberately exhausts the software stack. It should report
+SORRY and recover; reset if it fails to return to the prompt.
 
 Rebuild each matching text source from the repository root:
 
