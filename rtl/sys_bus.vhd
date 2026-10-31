@@ -149,6 +149,13 @@ ARCHITECTURE rtl OF sys_bus IS
   SIGNAL cart_ram_we : std_logic;
   SIGNAL cart_ram_rd : std_logic;
 
+  -- 4K expansion RAM for the corrected Tiny BASIC cartridge.
+  CONSTANT TINYBASIC_CRC : uv32 := x"75154CDF";
+  TYPE tinybasic_ram_t IS ARRAY (0 TO 4095) OF uv8;
+  SIGNAL tinybasic_ram : tinybasic_ram_t := (OTHERS => (OTHERS => '0'));
+  SIGNAL tinybasic_ram_active : std_logic;
+  SIGNAL tinybasic_ram_we : std_logic;
+
   TYPE ram_t IS ARRAY (0 TO 1023) OF uv8;
   SIGNAL sys_ram : ram_t := (OTHERS => (OTHERS => '0'));
   SIGNAL sys_ram_we : std_logic;
@@ -363,7 +370,9 @@ BEGIN
         rdata_l <= res2_rom(to_integer(a_eff - to_unsigned(ADDR_RES2_LO, 14)));
 
       ELSIF a_eff >= to_unsigned(ADDR_EXP_LO, 14) THEN
-        IF cart_ram_rd = '1' THEN
+        IF tinybasic_ram_active = '1' THEN
+          rdata_l <= tinybasic_ram(to_integer(a_eff(11 DOWNTO 0)));
+        ELSIF cart_ram_rd = '1' THEN
           rdata_l <= cart_ram(to_integer(cart_ram_a));
         ELSIF cart_exp_rom = '1' THEN
           cart_cpu_sel <= '1';
@@ -636,5 +645,20 @@ BEGIN
                  (cs2 AND a_eff(10) AND to_std_logic(cart_effective_type = CART_COMPLANG)) OR
                  (exp AND a_eff(11) AND to_std_logic(cart_effective_type = CART_MONEYMINDER));
   cart_ram_a  <= a_eff(9 DOWNTO 0);
+
+  tinybasic_ram_active <= cart_loaded_l AND
+    to_std_logic(cart_size = to_unsigned(16#1000#, cart_size'length) AND
+                 (NOT cart_crc) = TINYBASIC_CRC);
+  tinybasic_ram_we <= bus_wr AND tinybasic_ram_active AND
+    to_std_logic(a_eff >= to_unsigned(ADDR_EXP_LO, 14));
+
+  PROCESS (clk) IS
+  BEGIN
+    IF rising_edge(clk) THEN
+      IF reset_na = '1' AND tinybasic_ram_we = '1' THEN
+        tinybasic_ram(to_integer(a_eff(11 DOWNTO 0))) <= bus_wdata;
+      END IF;
+    END IF;
+  END PROCESS;
 
 END ARCHITECTURE rtl;
