@@ -149,7 +149,6 @@ ARCHITECTURE rtl OF sys_bus IS
   SIGNAL cart_ram_we : std_logic;
   SIGNAL cart_ram_rd : std_logic;
 
-  CONSTANT CART_EXP_RAM : natural := 5;
   TYPE exp_ram_t IS ARRAY (0 TO 4095) OF uv8;
   SIGNAL exp_ram : exp_ram_t := (OTHERS => (OTHERS => '0'));
   SIGNAL exp_ram_sel, exp_ram_we : std_logic;
@@ -196,6 +195,8 @@ ARCHITECTURE rtl OF sys_bus IS
   SIGNAL cart_a   : unsigned(11 DOWNTO 0);
   SIGNAL cart_cpu_a : unsigned(13 DOWNTO 0);
   SIGNAL cart_bank : natural RANGE 0 TO 2 := 0;
+  SIGNAL basic_bank : unsigned(2 DOWNTO 0) := (OTHERS => '0');
+  SIGNAL bb_cart_rom_a : unsigned(13 DOWNTO 0);
   SIGNAL cart_exp_rom : std_logic;
 
 BEGIN
@@ -389,10 +390,13 @@ BEGIN
   BEGIN
     IF rising_edge(clk) THEN
       cart_cpu_rdata <= cart_rom(to_integer(cart_cpu_a));
-      bb_cart_rom_rdata <= cart_rom(to_integer(bb_cart_addr AND
-                                              (cart_big & "11111111111")));
+      bb_cart_rom_rdata <= cart_rom(to_integer(bb_cart_rom_a));
     END IF;
   END PROCESS;
+
+  bb_cart_rom_a <= basic_bank & bb_cart_addr(10 DOWNTO 0)
+    WHEN cart_effective_type = CART_BASIC ELSE
+    resize(bb_cart_addr AND (cart_big & "11111111111"), 14);
 
   ext_rdata <= cart_cpu_rdata WHEN cart_cpu_sel = '1' ELSE rdata_l;
   bb_cart_rdata <= (OTHERS => '1') WHEN cart_loaded_l = '0' ELSE
@@ -577,7 +581,8 @@ BEGIN
       bb_cart_ram_rdata <= cart_ram(to_integer(bb_cart_addr(9 DOWNTO 0)));
       IF (cart_effective_type = CART_COMPLANG AND bb_cart_addr >= x"C00") OR
          (cart_effective_type = CART_INFOMAN AND bb_cart_addr(11) = '1') OR
-         (cart_effective_type = CART_TIMESHARE AND bb_cart_addr(11) = '1') THEN
+         ((cart_effective_type = CART_TIMESHARE OR cart_effective_type = CART_BASIC) AND
+          bb_cart_addr(11) = '1') THEN
         bb_cart_ram_sel <= '1';
       ELSE
         bb_cart_ram_sel <= '0';
@@ -594,11 +599,13 @@ BEGIN
   exp <= cart_loaded_l AND to_std_logic(a_eff >= to_unsigned(ADDR_EXP_LO, 14));
 
   cart_a <= resize(a_eff(11 DOWNTO 0), 12) AND (cart_big & "11111111111");
-  PROCESS (a_eff, cart_a, cart_effective_type, cs1, exp, cart_bank) IS
+  PROCESS (a_eff, cart_a, cart_effective_type, cs1, exp, cart_bank, basic_bank) IS
     VARIABLE chip : natural RANGE 0 TO 6;
   BEGIN
     cart_cpu_a <= resize(cart_a, 14);
-    IF cart_effective_type = CART_TIMESHARE OR cart_effective_type = CART_INFOMAN THEN
+    IF cart_effective_type = CART_BASIC THEN
+      cart_cpu_a <= basic_bank & a_eff(10 DOWNTO 0);
+    ELSIF cart_effective_type = CART_TIMESHARE OR cart_effective_type = CART_INFOMAN THEN
       IF cs1 = '1' THEN
         cart_cpu_a <= resize(a_eff(10 DOWNTO 0), 14);
       ELSIF exp = '1' AND cart_effective_type = CART_INFOMAN THEN
@@ -635,17 +642,31 @@ BEGIN
     END IF;
   END PROCESS;
 
+  PROCESS (clk) IS
+  BEGIN
+    IF rising_edge(clk) THEN
+      IF reset_na = '0' OR cart_unload = '1' OR power_cycle = '1' OR
+         (dl_cart = '1' AND dl_addr = x"0000") THEN
+        basic_bank <= (OTHERS => '0');
+      ELSIF ext_wr = '1' AND cart_loaded_l = '1' AND
+            cart_effective_type = CART_BASIC AND a_eff = 16#17FF# THEN
+        basic_bank <= ext_wdata(2 DOWNTO 0);
+      END IF;
+    END IF;
+  END PROCESS;
+
   cart_exp_rom <= exp AND to_std_logic(cart_effective_type = CART_COMPLANG OR
                                       cart_effective_type = CART_INFOMAN);
 
   cart_ram_rd <= (cs2 AND to_std_logic(cart_effective_type = CART_TIMESHARE)) OR
+                 (cs2 AND to_std_logic(cart_effective_type = CART_BASIC)) OR
                  (cs2 AND to_std_logic(cart_effective_type = CART_INFOMAN)) OR
                  (cs2 AND a_eff(10) AND to_std_logic(cart_effective_type = CART_COMPLANG)) OR
                  (exp AND a_eff(11) AND to_std_logic(cart_effective_type = CART_MONEYMINDER));
   cart_ram_a  <= a_eff(9 DOWNTO 0);
 
   exp_ram_sel <= exp AND
-    to_std_logic(cart_effective_type = to_unsigned(CART_EXP_RAM, 8));
+    to_std_logic(cart_effective_type = CART_EXP_RAM OR cart_effective_type = CART_BASIC);
   exp_ram_we <= bus_wr AND exp_ram_sel;
 
   PROCESS (clk) IS
