@@ -509,10 +509,24 @@ end
 
 reg [1:0] video_output = 0, requested_output = 0;
 reg apply_video_d = 0, apply_video_pending = 0;
+reg [2:0] startup_status_word = 0;
+reg startup_status_cmd = 0, startup_video_received = 0, startup_video_applied = 0;
+reg [1:0] startup_video_output = 0;
 wire progressive = video_output != 0;
 wire linedouble = video_output == 2;
 reg field_d = 0;
 always @(posedge clk_sys) begin
+	if (!HPS_BUS[34]) begin
+		startup_status_word <= 0;
+		startup_status_cmd <= 0;
+	end else if (HPS_BUS[33] && !startup_video_received) begin
+		if (startup_status_word == 0) startup_status_cmd <= HPS_BUS[31:16] == 16'h001e;
+		if (startup_status_word == 3 && startup_status_cmd) begin
+			startup_video_output <= HPS_BUS[26:25] == 3 ? 2'd0 : HPS_BUS[26:25];
+			startup_video_received <= 1;
+		end
+		if (startup_status_word != 7) startup_status_word <= startup_status_word + 1'b1;
+	end
 	field_d <= vid_field;
 	apply_video_d <= status[43];
 	if (RESET) begin
@@ -520,6 +534,11 @@ always @(posedge clk_sys) begin
 		requested_output <= 0;
 		apply_video_pending <= 0;
 	end else begin
+		if (startup_video_received && !startup_video_applied) begin
+			requested_output <= startup_video_output;
+			apply_video_pending <= 1;
+			startup_video_applied <= 1;
+		end
 		if (vid_field != field_d && apply_video_pending) begin
 			video_output <= requested_output;
 			apply_video_pending <= 0;
