@@ -104,7 +104,7 @@ localparam CONF_STR = {
 	"P2O[24],Reset on Load,On,Off;",
 	"P2O[44],BIOS Clock,Manual,Auto (RTC);",
 	"P2O[32],UART Output,Modem,Printer;",	
-	"P2O[11:9],Mapper Fallback,Standard,Timeshare,Money Minder,APL/S,Info. Manager;",
+	"P2O[11:9],Mapper Fallback,Standard,Timeshare,Money Minder,APL/S,Info. Manager,4K RAM;",
 	"P2-;",
 	"P2T[27],Master Control (Soft Reset);",
 	"-;",
