@@ -42,6 +42,28 @@ def music_pitches(body):
 
 
 class KeyboardTests(unittest.TestCase):
+    def test_tinybasic_keyboard_round_trip(self):
+        # Tiny BASIC VBCHARS table; BIOS READKBJOY matrix scan order.
+        table = (' I"U!Y\\T&R9E8W7Q'
+                 '%A.O#K)J(H/G-F6D'
+                 '5S4Z1P@L$M:N,B=V'
+                 "+C3X2?0;^'*")
+        text = ('PRINT "A",1\nPRINT 1,2\nPRINT "B",2+3\n'
+                '@(1)=7\nA$="HI"\nPRINT A$\nPRINT LEN(0)\n')
+        symbols = False
+        decoded = []
+        for key, _, _ in events(keyboard_text(text, 'letters', profile='tinybasic')):
+            if key in (MODE_LETTERS, MODE_SYMBOLS):
+                symbols = key == MODE_SYMBOLS
+            elif key == 19:
+                decoded.append(' ')
+            elif key == 27:
+                decoded.append('\n')
+            else:
+                index = 2 * ((key % 4) * 9 + key // 4 + 1) - (not symbols)
+                decoded.append(table[index])
+        self.assertEqual(''.join(decoded), text)
+
     def test_music_timing_presets(self):
         text = 'O4 C R8 O5 B O2 C O4 C'
         self.assertEqual(music(text, 'letters', timing='score'),

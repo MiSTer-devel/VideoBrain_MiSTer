@@ -10,7 +10,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools"))
 from keyboard_input import encode
-from keyboard_input import music, physical_keys
+from keyboard_input import keyboard_text, music, physical_keys
 from extract_printer import inspect
 from tape_convert import read_vbt
 
@@ -34,6 +34,7 @@ class ExampleTests(unittest.TestCase):
                               else "score")
                     expected = (music(text, "letters", timing=timing)
                                 if source.suffix == ".mml" else
+                                keyboard_text(text, "letters", profile="tinybasic") if source.parent.name == "tinybasic" else
                                 physical_keys(text) if source.name in ("clock-from-rtc.txt", "clock-from-rtc-v2.txt") else
                                 encode(text))
                 keyboard = source.with_name(source.stem.removesuffix(" (Source)") + ".vbk")

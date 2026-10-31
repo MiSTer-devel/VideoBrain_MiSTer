@@ -10,6 +10,7 @@ cartridge ROMs and Expander 1 firmware are supplied separately; see
 | [APL/S brochure](apl-s-brochure/README.md) | Earthlander, portfolio and immediate calculations with `.txt` sources and `.vbk` files. |
 | [Save and reload tutorials](saves/README.md) | Money Minder, Information Manager and APL/S working tapes. |
 | [Music](music/README.md) | Music Teacher 1 MML sources and `.vbk` playback files. |
+| [Tiny BASIC](tinybasic/README.md) | Small interpreter checks with `.txt` sources and `.vbk` files. |
 | [Blank tape](blank-tape.vbt) | Writable image for [tape recording](../docs/TAPE.md). |
 | [Blank printer image](blank-printer.vbp) | Empty image for [printer capture](../docs/PRINTER.md). |
 

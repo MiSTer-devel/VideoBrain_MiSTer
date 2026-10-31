@@ -29,6 +29,7 @@ PRINTED_SYMBOLS = {k: v for k, v in SYMBOLS.items()
                    if k not in (",", "\u00af", "{NEG}")}
 PRINTED_SYMBOLS.update({"%": 28, "\u00a2": 2, "{CENT}": 2})
 LOWER = dict(LETTERS, **{",": 7, ";": 3})
+TINYBASIC_SYMBOLS = {",": 14, "@": 2}
 FUNCTIONS = {name: bit for name, bit in KEYS.items() if len(name) > 1}
 BASE_NOTES = [34, 30, 35, 26, 31, 27, 18, 23, 14, 15, 10, 32,
               29, 20, 25, 16, 21, 17, 8, 13, 4, 9, 0, 5, 6, 2, 3]
@@ -133,6 +134,8 @@ def keyboard_text(text, start_mode, profile="keyboard", hold_final=False):
             desired = None
             if char == " ":
                 key = 19
+            elif profile == "tinybasic" and char in TINYBASIC_SYMBOLS:
+                key, desired = TINYBASIC_SYMBOLS[char], True
             elif char in LOWER:
                 key, desired = LOWER[char], False
             elif char.isascii() and char.upper() in LOWER:
@@ -304,7 +307,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source", type=Path)
     parser.add_argument("output", type=Path, nargs="?")
-    parser.add_argument("--profile", choices=("apl", "keyboard", "text", "keys", "music"), default="apl",
+    parser.add_argument("--profile", choices=("apl", "keyboard", "text", "tinybasic", "keys", "music"), default="apl",
                         help="input profile (music range: C2..B5)")
     parser.add_argument("--start-mode", choices=("letters", "symbols"))
     parser.add_argument("--hold-final", action="store_true", help="omit the final NEXT; earlier lines still submit")

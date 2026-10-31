@@ -46,6 +46,7 @@ Convert APL/S input, text, physical keys or Music Teacher MML to `.vbk`:
 ```sh
 python3 tools/keyboard_input.py program.txt program.vbk
 python3 tools/keyboard_input.py text.txt text.vbk --profile keyboard --start-mode letters
+python3 tools/keyboard_input.py basic.txt basic.vbk --profile tinybasic --start-mode letters
 python3 tools/keyboard_input.py keys.txt keys.vbk --profile keys
 python3 tools/keyboard_input.py examples/clock-from-rtc.txt examples/clock-from-rtc.vbk --profile keys
 python3 tools/keyboard_input.py music.mml music.vbk --profile music --start-mode letters
@@ -60,6 +61,10 @@ SHIFT automatically and finishes in lower mode. Regenerate older VBK2 files
 to use mode synchronization; updated files require a core supporting F8/F9.
 The `keys` profile accepts physical key scripts such as `NEXT 8 8` and
 `WAIT 120`, with durations in video fields.
+
+The `tinybasic` profile uses Tiny BASIC's comma mapping (SHIFT+N) instead
+of the printed COMMA key, and supports `@` with SHIFT+P for arrays.
+It also requires `--start-mode`.
 
 Music conversion defaults to score timing. `--timing note` retains note
 lengths and adds octave-switch time; `--replay` requests replay after entry.
