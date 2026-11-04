@@ -52,13 +52,17 @@ localparam CONF_STR = {
 	"F1,BINVBC,Load Cartridge;",
 	"-;",
 
-	// === TAPE ===
-	"d8S0,VBT,Mount Playback Tape;",
-	"T[23],Rewind Playback Tape;",
-	"d8S1,VBT,Mount Record Tape;",
-	"d8T[46],New Record Tape;",
-	"T[30],Rewind Record Tape;",
-	"-;",
+	// === JOYSTICKS ===
+	"P3,Joysticks;",
+	"P3-;",
+	"P3O[5],Joysticks,Connected,Disconnected;",
+	"D4P3R[20],Calibrate Sticks;",
+	"P3-;",
+	"D4P3O[15:14],Stick Preset,Auto,Tennis,Gladiator;",
+	"D4P3O[38],Analog Mode,Absolute,Relative;",
+	"DDP3O[40:39],Relative Speed,Slow,Normal,Fast;",
+	"P3-;",
+	"D4P3O[17:16],Paired Sticks,Off,1+2 / 3+4 (Pinball),1+3 / 2+4 (Doubles);",
 
 	// === KEYBOARD ===
 	"P4,Keyboard;",
@@ -73,17 +77,15 @@ localparam CONF_STR = {
 	"P4-;",
 	"P4O[29],Esc Soft Reset,On,Off;",
 
-	// === JOYSTICKS ===
-	"P3,Joysticks;",
-	"P3-;",
-	"P3O[5],Joysticks,Connected,Disconnected;",
-	"D4P3R[20],Calibrate Sticks;",
-	"P3-;",
-	"D4P3O[15:14],Stick Preset,Auto,Tennis,Gladiator;",
-	"D4P3O[38],Analog Mode,Absolute,Relative;",
-	"DDP3O[40:39],Relative Speed,Slow,Normal,Fast;",
-	"P3-;",
-	"D4P3O[17:16],Paired Sticks,Off,1+2 / 3+4 (Pinball),1+3 / 2+4 (Doubles);",
+	// === TAPES ===
+	"P6,Tapes;",
+	"P6-;",
+	"d8P6S0,VBT,Mount Playback Tape;",
+	"P6T[23],Rewind Playback Tape;",
+	"P6-;",
+	"d8P6S1,VBT,Mount Record Tape;",
+	"d8P6T[46],New Record Tape;",
+	"P6T[30],Rewind Record Tape;",
 
 	// === PRINTER ===
 	"P5,Printer;",
@@ -111,7 +113,8 @@ localparam CONF_STR = {
 	"P1O[45],Colors,16 (Original),32 (Patent);",
 	"P1-;",
 	"P1O[122:121],Aspect Ratio,Original,Full Screen,[ARC1],[ARC2];",
-	"P1O[125:123],Scale,Normal,V-Integer,HV-Integer-,HV-Integer+,HV-Integer;",	
+	"P1O[125:123],Scale,Normal,V-Integer,HV-Integer-,HV-Integer+,HV-Integer;",
+
 
 	// === SYSTEM ===
 	"P2,System;",
@@ -125,9 +128,9 @@ localparam CONF_STR = {
 	"P2O[32],UART Output,Modem,Printer;",	
 	"P2O[11:9],Mapper Fallback,Standard,Timeshare,Money Minder,APL/S,Info. Manager,4K RAM,BASIC;",
 	"P2-;",
+	"DAP2R[28],Unload Cartridge;",
 	"P2T[27],Master Control (Soft Reset);",
 	"-;",
-	"DAR[28],Unload Cartridge;",
 
 	// === RESET ===
 	"R[0],Reset;",
