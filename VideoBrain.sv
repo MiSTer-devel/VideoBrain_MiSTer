@@ -86,13 +86,15 @@ localparam CONF_STR = {
 	"P6-;",
 	"d8P6S0,VBT,Mount Playback Tape;",
 	"P6T[23],Rewind Playback Tape;",
-	"h2P6-,Playback Tape Rewound;",
 	"P6-;",
 	"d8P6S1,VBT,Mount Record Tape;",
 	"P6T[30],Rewind Record Tape;",
-	"h3P6-,Record Tape Rewound;",
 	"P6-;",
 	"d8P6T[46],Create New Tape;",
+	"P6-;",
+	// == TAPE STATUS ==
+	"h3P6-,Record Tape Rewound;",	
+	"h2P6-,Playback Tape Rewound;",	
 	"h1P6-,Tape Created;",
 
 
@@ -101,14 +103,17 @@ localparam CONF_STR = {
 	"P5-;",
 	"d6P5S2,VBP,Mount Capture Image;",
 	"d6P5T[47],New Capture Image;",
+	"P5-;",
 	"P5O[33],Capture Baud,300,110;",
 	"P5-;",
 	"d7P5T[34],Start Capture;",
 	"DEP5T[35],Stop Capture and Save;",
+	"P5-;",
 	"DEP5T[36],Show Capture Status;",
 	"P5-;",
 	"P5O[37],Info. Manager Fix,Off,On;",
 	"P5-;",
+	// == PRINTER STATUS ==
 	"h9P5-,Printer Active;",
 	"hBP5-,Printer Busy;",
 	"hCP5-,Printer Error;",
@@ -119,12 +124,14 @@ localparam CONF_STR = {
 	"P1-;",
 	"P1O[42:41],Output,480i (Original),240p,480p;",
 	"P1T[43],Apply Video Output;",
-	"h0P1-,Changes Pending;",
 	"P1-;",
 	"P1O[45],Colors,16 (Original),32 (Patent);",
 	"P1-;",
 	"P1O[122:121],Aspect Ratio,Original,Full Screen,[ARC1],[ARC2];",
 	"P1O[125:123],Scale,Normal,V-Integer,HV-Integer-,HV-Integer+,HV-Integer;",
+	"P1-;",
+	// == VIDEO STATUS ==
+	"h0P1-,Changes Pending;",
 
 
 	// === SYSTEM ===
