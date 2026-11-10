@@ -74,5 +74,11 @@
   {"source": "tinybasic-examples/40-text-intensities.txt", "output": "tinybasic-examples/40-text-intensities.vbk", "profile": "tinybasic", "options": {"start_mode": "letters"}},
   {"source": "tinybasic-examples/41-color-combinations.txt", "output": "tinybasic-examples/41-color-combinations.vbk", "profile": "tinybasic", "options": {"start_mode": "letters"}},
   {"source": "tinybasic-examples/42-color-scroll.txt", "output": "tinybasic-examples/42-color-scroll.vbk", "profile": "tinybasic", "options": {"start_mode": "letters"}},
+  {"source": "tinybasic-examples/43-display-control.txt", "output": "tinybasic-examples/43-display-control.vbk", "profile": "tinybasic", "options": {"start_mode": "letters"}},
+  {"source": "tinybasic-examples/44-cls-state.txt", "output": "tinybasic-examples/44-cls-state.vbk", "profile": "tinybasic", "options": {"start_mode": "letters"}},
+  {"source": "tinybasic-examples/45-move-grid.txt", "output": "tinybasic-examples/45-move-grid.vbk", "profile": "tinybasic", "options": {"start_mode": "letters"}},
+  {"source": "tinybasic-examples/46-move-scroll.txt", "output": "tinybasic-examples/46-move-scroll.vbk", "profile": "tinybasic", "options": {"start_mode": "letters"}},
+  {"source": "tinybasic-examples/47-move-errors.txt", "output": "tinybasic-examples/47-move-errors.vbk", "profile": "tinybasic", "options": {"start_mode": "letters"}},
+  {"source": "tinybasic-examples/48-symbol-comparisons.txt", "output": "tinybasic-examples/48-symbol-comparisons.vbk", "profile": "tinybasic", "options": {"start_mode": "letters"}},
   {"source": "rtc-clock.txt", "output": "rtc-clock.vbk", "profile": "keys", "options": {}}
 ]
