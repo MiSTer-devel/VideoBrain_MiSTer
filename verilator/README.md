@@ -49,14 +49,9 @@ ROMs are not bundled or downloaded by the runner. Generated printer outputs
 are checked immediately after their producer target; the ROM-free tool suite
 uses only self-contained printer-image fixtures.
 
-Long full-machine checks remain separate: `test-apl-reload`,
-`test-printer-cartridge`, `test-printer-infoman`,
-`test-printer-infoman-apple`, `capture-apl-save`, `replay-apl-tape` and
-`replay-clock-source`. They need original ROMs and, for some targets, a
-separately supplied recording. The master suite lists these exclusions.
-Original-machine measurements and MiSTer acceptance tests remain separate.
+Long full-machine checks remain separate: `test-apl-reload`, `test-printer-cartridge`, `test-printer-infoman`, `test-printer-infoman-apple`, `capture-apl-save`, `replay-apl-tape`, `replay-clock-source` and `test-rtc-boot`. They need original ROMs and, for some targets, a separately supplied recording. The master suite lists these exclusions. Original-machine measurements and MiSTer acceptance tests remain separate.
 
-`make test-rtc-boot` checks optional RTC clock initialization against the original BIOS, including reset reseeding, disabled/missing and late RTC, and midnight rollover. Supply RES1 and RES2 ROMs. MiSTer verification remains separate.
+`make test-rtc-boot` checks optional RTC clock initialization against the original BIOS, including reset reseeding, disabled/missing and late RTC, and midnight rollover. Supply RES1 and RES2 ROMs. It runs for over an hour. MiSTer verification remains separate.
 
 `make test-video` checks native machine timing across output modes, staged output selection, buffered pixels, bottom-row padding, progressive frame cadence, and uncropped 480p line duplication using native and progressive clock models. It checks the 189 by 242 and 189 by 484 active areas, exercises the upstream MiSTer mixer, and compares OSD stripe positions across rows. `make test-progressive-sync` checks fixed line period, sync width and picture position relative to sync, plus frame cadence, in both progressive modes. `make test-video-clock` checks PLL rate selection, stalled reconfiguration writes, queued requests, lock gating, reset, and clock quantization drift. Both also run as part of `test-video`. Hardware output and audio still require MiSTer validation.
 
