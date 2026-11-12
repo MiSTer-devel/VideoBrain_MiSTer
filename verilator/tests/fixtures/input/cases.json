@@ -26,7 +26,7 @@
   {"source": "apl-s-manual-chapter-6/18-sine.txt", "output": "apl-s-manual-chapter-6/18-sine.vbk", "profile": "apl", "options": {}},
   {"source": "apl-s-manual-chapter-6/19-sharpshooter.txt", "output": "apl-s-manual-chapter-6/19-sharpshooter.vbk", "profile": "apl", "options": {}},
   {"source": "apl-s-manual-chapter-6/20-guess-number.txt", "output": "apl-s-manual-chapter-6/20-guess-number.vbk", "profile": "apl", "options": {}},
-  {"source": "clock-from-rtc-v2.txt", "output": "clock-from-rtc-v2.vbk", "profile": "keys", "options": {}},
+  {"source": "clock-from-rtc.txt", "output": "clock-from-rtc.vbk", "profile": "keys", "options": {}},
   {"source": "music/bach-cello-suite-1-prelude.mml", "output": "music/bach-cello-suite-1-prelude.vbk", "profile": "music", "options": {"start_mode": "letters", "timing": "score"}},
   {"source": "music/bach-wtc-1-prelude-1.mml", "output": "music/bach-wtc-1-prelude-1.vbk", "profile": "music", "options": {"start_mode": "letters", "timing": "score"}},
   {"source": "music/chopin-minute-waltz.mml", "output": "music/chopin-minute-waltz.vbk", "profile": "music", "options": {"start_mode": "letters", "timing": "score"}},

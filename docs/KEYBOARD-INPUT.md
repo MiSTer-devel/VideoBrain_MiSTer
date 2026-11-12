@@ -6,11 +6,9 @@ See [converter commands and options](../tools/README.md#keyboard-files).
 
 `--profile apl` is the default. Text profiles require `--start-mode`: `letters` means lower/unshifted; `symbols` means upper/shifted. Generated VBK2 files establish that mode and request later mode changes using the tracked SHIFT latch. Music synchronizes its own mode. Regenerate older files to use this behavior; updated files require a core supporting F8/F9 mode controls. The physical `keys` profile retains raw SHIFT toggles.
 
-## Set built-in clock from RTC
+## Type the RTC date and time
 
-With no cartridge inserted, load `examples/clock-from-rtc.vbk` from **Keyboard > Load Keyboard File**. It selects CLOCK, enters the host local date and time, then starts the clock. The script is intended for the built-in clock screen, not cartridges.
-
-`examples/clock-from-rtc-v2.vbk` is an alternative for a clock that has not yet been set. It selects CLOCK, ensures upper SHIFT, enters the RTC digits, sends one additional 0 to advance to the start screen, ensures lower SHIFT, then presses G. The source uses QUESTION for the physical 0/? key. It sends no S and inserts no wait. The revised file requires hardware verification.
+To set the built-in clock automatically, use **System > BIOS Clock > Auto (RTC)**. For manual entry, `examples/clock-from-rtc.vbk` contains a single `RTC` event: it types the host local date and time as 16 physical numeric keys and presses nothing else. Open the screen that should receive the digits and set the SHIFT mode it expects first; the built-in clock's setting screen takes them in upper SHIFT.
 
 The new `VBK3` format accepts `RTC [hold gap]` in the physical-keys converter. It expands to the 16 physical numeric keys for `YYYYMMDDWWHHMMSS` when reached. `WW` is Monday=01 through Sunday=07. Existing VBK1/VBK2 files are unchanged; an older core rejects VBK3.
 
@@ -35,7 +33,7 @@ MiSTer supplies RTC once at core startup. The loader advances it locally and all
 
 Boot the Computational Language cartridge and wait for its input prompt before loading a `.vbk`. Once the OSD closes, the core types the listing. Canceling leaves partial input; reset or reload the cartridge before retrying a partial listing.
 
-The bundled [Price games and listings](../examples/21-apl_s-games-james-price) come with `.txt` sources and ready-to-load `.vbk` files.
+For APL/S listings to try, see James Price's [21 APL/S Games and One-Liners](https://github.com/jamescprice/21-APL-Games-and-One-Liners-For-Your-Umtech-Videobrain).
 
 The [APL/S manual chapter 6 listings](../examples/apl-s-manual-chapter-6) include numerical utilities, inverse trig functions, bar-graph demos and games from printed pages 49-59.
 

@@ -8,8 +8,6 @@ Known raw dumps are identified by CRC-32 and use the matching slot behavior. `--
 precedence over fingerprint detection and Mapper Fallback. Optional metadata
 does not change settings unless it supplies a defined, explicit declaration.
 
-For power cycle, Master Control, cartridge unloading and hot loading, see [reset behavior](RESET.md).
-
 Fingerprints for all sixteen released single-image cartridges come from MAME's [VideoBrain software list](https://github.com/mamedev/mame/blob/master/hash/vidbrain.xml).
 
 ## Summary

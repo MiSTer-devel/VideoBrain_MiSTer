@@ -9,12 +9,7 @@ capture controller sends no acknowledgements or response characters.
 
 With VideoBrain image-creation support in Main_MiSTer, **Printer > New Capture Image** creates and mounts a 1 MiB blank in the `saves` subdirectory of the core's games directory. Files are named `Printer_1.vbp`, `Printer_2.vbp`, and so on without replacing existing files. Close the OSD to see the result, then wait for **Printer ready** before starting capture. This entry is disabled while the printer is busy. Older Main versions require the blank-file procedure below.
 
-Information Manager's original prototype has printer row-count and serial
-startup problems in the tested execution path. Printer > InfoMan Fix (Reload)
-is Off by default, preserving the original software. To use the correction,
-select On before loading the original cartridge. Reload after changing this
-option in either direction. The core corrects only its loaded RAM copy of
-the recognized original image; automatic mapper detection still applies.
+Information Manager's original prototype has printer row-count and serial startup problems in the tested execution path. **Printer > Info. Manager Fix** is Off by default, preserving the original software. To use the correction, select On before loading the original cartridge. Reload after changing this option in either direction. The core corrects only its loaded RAM copy of the recognized original image; automatic mapper detection still applies.
 
 1. Copy `examples/blank-printer.vbp` to the SD card under a new name, or create
    an image with the tool below. Use a different file from either tape image.

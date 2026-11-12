@@ -101,12 +101,7 @@ is a software convention and imposes no additional format restriction.
 CPU and video DMA share cartridge ROM and 1K cartridge RAM. DMA uses the same
 CS2 RAM mirrors and BASIC ROM bank. Expansion ROM and 4K workspace are CPU-only.
 
-APL/S and BASIC select bank zero on cartridge replacement, unload, and power
-cycle. Master Control preserves the APL/S bank but resets the BASIC bank.
-Cartridge replacement and Master Control preserve RAM; a power cycle clears
-the 1K cartridge RAM. Workspace RAM is not cleared by those operations and
-must be initialized by software. The container adds no RAM initialization or
-persistence behavior. See [reset controls](RESET.md).
+APL/S and BASIC select bank zero on cartridge replacement, unload, and power cycle. Master Control preserves the APL/S bank but resets the BASIC bank. Cartridge replacement and Master Control preserve RAM; a power cycle clears the 1K cartridge RAM. Workspace RAM is not cleared by those operations and must be initialized by software. The container adds no RAM initialization or persistence behavior.
 
 Existing profile behavior is fixed. Different paging or RAM hardware requires
 a new profile or profile version, rather than a title-specific exception.

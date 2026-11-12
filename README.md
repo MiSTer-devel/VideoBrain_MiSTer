@@ -76,7 +76,6 @@ See [accuracy and remaining work](docs/ACCURACY.md).
 - **Reset:** power cycle; clears volatile memory, retains loaded ROMs.
 - **System > Master Control (Soft Reset) / Esc:** original reset key; software decides what to retain. Discards the APL/S program. Disable Esc with Keyboard > Esc Soft Reset > Off.
 - **System > Info Messages > Off:** disable status popups, including errors.
-- [Reset, cartridge reload and RTC clock options](docs/RESET.md).
 
 ## Tools and building
 
