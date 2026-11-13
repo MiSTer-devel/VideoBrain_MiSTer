@@ -51,7 +51,7 @@ See [accuracy and remaining work](docs/ACCURACY.md).
 | F4 / End | SPECIAL/ALARM |
 | F5 / Ctrl+Enter | ERASE/RESTART |
 
-- **SHIFT:** toggle in the BIOS and most software; held in Timeshare.
+- **SHIFT:** toggle in the BIOS and most software; held in Timeshare. The PC keyboard's Caps Lock LED lights in upper SHIFT mode while the software keeps the BIOS SHIFT state (BIOS, APL/S and most cartridges).
 - **Numbers:** number row and keypad alias the VideoBrain numeric positions; select the software's numeric/SHIFT mode first.
 - [Original keyboard, cartridge overlays and software instructions](docs/HOW-TO-PLAY.md).
 

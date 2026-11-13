@@ -72,6 +72,10 @@ set_global_assignment -name SEED 2
 # Disable ALSA audio output to save some resources
 #set_global_assignment -name VERILOG_MACRO "MISTER_DISABLE_ALSA=1"
 
+# Show Create New Tape and New Capture Image (needs a Main_MiSTer with
+# VideoBrain image-creation support)
+#set_global_assignment -name VERILOG_MACRO "VIDEOBRAIN_IMAGE_CREATE=1"
+
 source sys/sys.tcl
 set_global_assignment -name FAMILY "Cyclone V"
 set_global_assignment -name DEVICE 5CSEBA6U23I7

@@ -90,19 +90,26 @@ localparam CONF_STR = {
 	"d8P6S1,VBT,Mount Record Tape;",
 	"P6T[30],Rewind Record Tape;",
 	"P6-;",
+`ifdef VIDEOBRAIN_IMAGE_CREATE
+	// Needs VideoBrain image-creation support in Main_MiSTer
 	"d8P6T[46],Create New Tape;",
 	"P6-;",
+`endif
 	// == TAPE STATUS ==
 	"h3P6-,Record Tape Rewound;",	
 	"h2P6-,Playback Tape Rewound;",	
+`ifdef VIDEOBRAIN_IMAGE_CREATE
 	"h1P6-,Tape Created;",
+`endif
 
 
 	// === PRINTER ===
 	"P5,Printer;",
 	"P5-;",
 	"d6P5S2,VBP,Mount Capture Image;",
+`ifdef VIDEOBRAIN_IMAGE_CREATE
 	"d6P5T[47],New Capture Image;",
+`endif
 	"P5-;",
 	"P5O[33],Capture Baud,300,110;",
 	"P5-;",
@@ -227,6 +234,9 @@ wire [7:0] tape_buff_dout, tape_buff_din[2];
 wire tape_buff_wr, tape_readonly;
 wire [1:0] tape_mounted;
 wire [63:0] tape_size;
+// BIOS SHIFT mode snooped from RAM 0FE2: 1 = upper/symbols. Also drives the
+// PC keyboard's Caps Lock LED.
+wire apl_symbols;
 wire tape_record_data, tape_record_enable, tape_playback_data, tape_playback_enable;
 wire [1:0] tape_deck_busy, tape_deck_error, tape_deck_rewound;
 wire [1:0] tape_deck_ended;
@@ -295,7 +305,10 @@ hps_io #(.CONF_STR(CONF_STR), .CONF_STR_BRAM(1), .VDNUM(3)) hps_io
 	.joystick_r_analog_1(joystick_r_analog_1),
 	.joystick_r_analog_2(joystick_r_analog_2),
 	.joystick_r_analog_3(joystick_r_analog_3),
-	.ps2_key(ps2_key)
+	.ps2_key(ps2_key),
+	// Claim only the Caps Lock LED; Main stops toggling it while claimed
+	.ps2_kbd_led_use(3'b100),
+	.ps2_kbd_led_status({apl_symbols, 2'b00})
 );
 
 
@@ -334,7 +347,7 @@ videobrain_reset reset_control (
 wire boot_dl = ioctl_download && (ioctl_index == 16'd0);
 wire source_dl = ioctl_download && (ioctl_index[7:0] == 8'd4);
 wire apl_available, music_available, apl_load_error;
-wire apl_symbols, source_busy, source_error, source_started, source_complete, source_aborted;
+wire source_busy, source_error, source_started, source_complete, source_aborted;
 wire source_enabled = !OSD_STATUS || (status[31] && source_started);
 wire source_music_playback = !status[18] || status[19];
 wire apl_input_ready, apl_key_accepted;
