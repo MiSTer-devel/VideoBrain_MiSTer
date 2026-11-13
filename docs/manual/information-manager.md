@@ -9,11 +9,13 @@
 
 ## About This Booklet
 
-No owner's manual for Information Manager is known to survive. The cartridge itself exists as a September 1978 prototype, and this booklet was written in 2026 to stand in for the manual it never received.
+As of November 2026, no owner's manual for Information Manager has been located, and one may never have been printed. The cartridge itself exists as a September 1978 prototype and has been dumped, so this 2026 booklet was written to aid in usage of the software.
 
-Everything here was worked out by running the cartridge on the VideoBrain MiSTer core and by reading its program code. It is written in the style of the original VideoBrain booklets, but it is a reconstruction, not an original Umtech publication. Screen illustrations are close to what you will see but are not exact copies. The last page lists which features have been tried on a running machine and which are known only from the program code.
+It is written in the style of the original VideoBrain booklets; it is not an original Umtech publication. Cover formatting and screen illustrations are approximations based on existing official material. 
 
-The newest version of this guide, along with the VideoBrain MiSTer core itself, is at github.com/MiSTer-devel/VideoBrain_MiSTer.
+The functions were worked out by reading the program code, then iteratively testing on the extracted strings and traced logic. The last page lists which features have been tried on a running machine and which are known only from the code.
+
+The newest version of this guide, along with the VideoBrain MiSTer core itself, is at https://github.com/MiSTer-devel/VideoBrain_MiSTer.
 
 </div>
 
@@ -275,6 +277,8 @@ With a printer connected to Expander 1 at 300 baud, add `PTR` to the end of a RE
 
 PTR applies only to the command it ends. The next command without PTR goes to the screen alone.
 
+> **Note:** On the prototype cartridge as it was found, PTR hangs the program. On MiSTer, turn on the printer fix described on the MiSTer page before you use it.
+
 # Reference
 
 ## Command Summary
@@ -332,10 +336,12 @@ Load Expander 1 firmware along with the cartridge. In the OSD's Tapes menu, **Mo
 
 The user LED shows tape activity. Wait for it to go out before changing tapes or cores.
 
-For printing, mount a printer capture image, set it to 300 baud and start capture before using PTR. See `docs/PRINTER.md` and `docs/TAPE.md` in the core's repository, and `docs/INFOMAN-MANUAL.md` for the full technical guide.
+For printing, set **Printer > Info. Manager Fix** to On before loading the cartridge, then mount a printer capture image, set it to 300 baud and start capture before using PTR. See `docs/PRINTER.md` and `docs/TAPE.md` in the core's repository, and `docs/INFOMAN-MANUAL.md` for the full technical guide.
+
+<div style="break-before: page"></div>
 
 ## How This Guide Was Checked
 
-Tried on the MiSTer core: creating, reviewing and editing a database with one 8-character word field and one record, reading a changed copy back, and P DESC in REVIEW.
+Tried on the MiSTer core: creating, reviewing and editing a database with one 8-character word field and one record, reading a changed copy back, P DESC in REVIEW, and PTR, which hangs the original cartridge. The core's **Printer > Info. Manager Fix** option (off by default) patches the loaded cartridge so the printer can be used; set it before loading and reload after changing it.
 
-Worked out from the program code but not yet tried on a running machine: databases with several fields or records, number fields, FLD, SORT, TOT and TOTAL, ADD, REPLACE, DELETE, MERGE, and printing with PTR. If something here does not match what your VideoBrain does, the cartridge is right and this booklet is wrong. Please report it at the address on the inside cover.
+Worked out from the program code but not yet tried on a running machine: databases with several fields or records, number fields, FLD, SORT, TOT and TOTAL, ADD, REPLACE, DELETE and MERGE. If something here does not match what your VideoBrain does, the cartridge is right and this booklet is wrong. Please report it at the address on the inside cover.
