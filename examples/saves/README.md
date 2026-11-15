@@ -52,7 +52,7 @@ Wait for the opening screen and the user LED to clear. Restart the cartridge, mo
 
 To try an edited save, mount this database as **Playback Tape** and a different writable blank as **Record Tape**. Rewind both. Submit `EDIT` at `:`, then `PRINT ALL` at `/`. Change APPLE to PEPSI and accept with NEXT. After `END OF TAPE`, submit `EXIT` and wait for recording activity to finish. Mount the output as Playback Tape, rewind, and use REVIEW / PRINT ALL: expect `ITEM: PEPSI`. The source should still display APPLE when separately rewound and reviewed.
 
-See the [Information Manager manual](../../docs/INFOMAN-MANUAL.md) for field types, database planning and other commands.
+See the [Information Manager Owner's Guide](../../docs/manual/information-manager.pdf) for field types, database planning and other commands, and the [manual notes](../../docs/INFOMAN-MANUAL.md) for MiSTer tape handling and test status.
 
 ## APL/S: countdown
 

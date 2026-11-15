@@ -91,7 +91,7 @@ Original-machine Money Minder recordings and SD SAVE/LOAD are covered in [tape s
 
 ### Information Manager
 
-This prototype needs Expander 1 firmware. See the [user manual](INFOMAN-MANUAL.md) for database terms, planning fields, entering records, reading saved data and making an edited copy. NEXT is F3 or Enter; SPECIAL is F4. To display saved records, enter `REVIEW` at `:`, then `PRINT ALL` at `/`. `LIST` is not a recognized command. The manual identifies features that still need verification.
+This prototype needs Expander 1 firmware. See the [Owner's Guide](manual/information-manager.pdf) for database terms, planning fields, entering records, reading saved data and making an edited copy. NEXT is F3 or Enter; SPECIAL is F4 or End. To display saved records, enter `REVIEW` at `:`, then `PRINT ALL` at `/`. `LIST` is not a recognized command. The [manual notes](INFOMAN-MANUAL.md) cover MiSTer tape handling and identify features that still need verification.
 
 ### Timeshare
 
