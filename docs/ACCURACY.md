@@ -1,7 +1,5 @@
 # Accuracy report
 
-Current source status, November 3, 2026. The core is nearly ready for 1.0. This describes the source, rather than a particular released RBF.
-
 ## What this core represents
 
 The aim is to recreate the VideoBrain's hardware behavior as faithfully as the available evidence allows. The implementation includes the Fairchild F8 processor, UV201 video system, UV202 clock and bus control, memory and cartridge interfaces, keyboard, joystick timing, sound output, and Expander 1 support.
