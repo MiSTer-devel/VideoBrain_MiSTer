@@ -8,9 +8,7 @@ The aim is to recreate the VideoBrain's hardware behavior as faithfully as the a
 
 The evidence consists of preserved documentation, reverse engineering, board connection records, original software and cassette data, photographs, screenshots, and videos, together with MAME and implementation tests. Direct access to an original VideoBrain is unavailable. Tests on MiSTer establish behavior of this core; they are not direct measurements of an original VideoBrain.
 
-No core bugs are currently known. Release qualification still requires validation of the exact candidate source and RBF, including timing closure and MiSTer checks of the supported output modes and peripheral workflows. Positive timing results alone do not establish that the current source or release artifact has been qualified.
-
-Tiny BASIC Enhanced and the Tennis adaptation are separate software projects; their remaining work does not define core release readiness.
+No core bugs are currently known.
 
 ## Evidence and confidence
 
