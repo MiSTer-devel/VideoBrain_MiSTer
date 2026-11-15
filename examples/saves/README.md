@@ -1,6 +1,6 @@
 # Make, save and reload
 
-Three small projects for learning tape use: a Money Minder account, an Information Manager database and an original APL/S countdown. Each example tape is 8 MiB so you can save changes to a working copy. The trimmed [Price program tapes](../price-tape-conversions) are a separate collection.
+Three small projects for learning tape use: a Money Minder account, an Information Manager database and an original APL/S countdown. Each example tape is 8 MiB so you can save changes to a working copy. James Price's [APL/S games and one-liners](https://github.com/jamescprice/21-APL-Games-and-One-Liners-For-Your-Umtech-Videobrain) are a separate collection.
 
 | Cartridge | Example save | Contents |
 |---|---|---|

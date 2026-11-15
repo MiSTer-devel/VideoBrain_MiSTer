@@ -2,6 +2,31 @@
 
 Binary identities and release-specific setup requirements. Use the [installation guide](../README.md#installing) for current setup and the [accuracy report](ACCURACY.md) for current implementation status.
 
+## VideoBrain 20261113
+
+[November 13 release](../releases/VideoBrain_20261113.rbf).
+
+### Artifact
+
+- File: `VideoBrain_20261113.rbf`
+- Build source: `748a05ba8294618a428ae758b860add788432bcd`
+- Size: 3,011,468 bytes
+- SHA-256: `9d41954fe2c8a23d7ee7d33095c1f6381a6fbae34849fab48a3d002c12a556d9`
+
+## VideoBrain 20261027
+
+[Initial release build](../releases/VideoBrain_20261027.rbf), shipped with the first MiSTer-devel release on October 28, 2026. Earlier entries are pre-release builds.
+
+### Artifact
+
+- File: `VideoBrain_20261027.rbf`
+- Published: October 28, 2026
+- Publication commit: [`fefc9918d738ef0c2d79833ec0a6d8ba0c0cbeab`](https://github.com/MiSTer-devel/VideoBrain_MiSTer/commit/fefc9918d738ef0c2d79833ec0a6d8ba0c0cbeab)
+- Size: 3,004,800 bytes
+- SHA-256: `2861547e6b99627b20adc442abd12681e2b2c57b6a67c36f4a3c227136be36ad`
+
+The publication commit identifies the tracked binary; its exact build-source revision was not recorded.
+
 ## VideoBrain 20261026
 
 [October 26 release candidate](../releases/VideoBrain_20261026.rbf).

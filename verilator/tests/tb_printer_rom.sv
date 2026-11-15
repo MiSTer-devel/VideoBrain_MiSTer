@@ -8,7 +8,7 @@ reg modem_rxd=1;
 reg [15:0] dl_addr=0;
 reg [7:0] dl_data=0;
 reg dl_wr=0;
-expander1 expander(.*,.record_data(),.record_enable(),.playback_enable(),
+expander1 expander(.*,.power_cycle(1'b0),.record_data(),.record_enable(),.playback_enable(),
     .playback_data(1'b1),.printer_rxd(1'b1),.dl_index(8'd3));
 wire [31:0] lbas[3];
 wire [2:0] reads,writes,acks;
