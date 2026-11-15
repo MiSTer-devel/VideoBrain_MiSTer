@@ -12,10 +12,10 @@ See [accuracy and remaining work](docs/ACCURACY.md).
 
 ## Installing
 
-- Core: latest .rbf from [releases](releases) in /media/fat/_Computers.
-- ROMs and media: /media/fat/games/VideoBrain.
-- boot0.rom: required BIOS; combine the two dumps below with the [BIOS tool](tools/README.md#bios).
-- boot1.rom: Expander 1 firmware; required for Information Manager, Timeshare and tape operation. Also loadable from the OSD.
+- Core: latest .rbf from [releases](releases) in /media/fat/_Computers
+- ROMs and media: /media/fat/games/VideoBrain
+- boot0.rom: required BIOS; combine the two dumps below with the [BIOS tool](tools/README.md#bios)
+- boot1.rom: Expander 1 firmware; required for Information Manager, Timeshare and tape operation. Also loadable from the OSD
 
 | ROM | Bytes | MD5 |
 | --- | ---: | --- |
@@ -34,10 +34,10 @@ See [accuracy and remaining work](docs/ACCURACY.md).
 | Keyboard > Load Keyboard File | .vbk | [Automatic key entry and music](docs/KEYBOARD-INPUT.md) |
 | Printer > Mount Capture Image | .vbp | [Printer capture and export](docs/PRINTER.md) |
 
-- Tapes store user data, not software. Use the cartridge's SAVE/LOAD commands.
-- Keyboard files: listings, text and music; [examples](examples/README.md) and [converters](tools/README.md#keyboard-files) provided. Any key cancels entry. Keyboard > OSD Aborts VBK controls cancellation when opening the menu.
-- Printer capture: Stop Capture and Save, wait for Ready, then unmount before export.
-- Timeshare: [UART network bridge setup](docs/EXPANDER1.md#timeshare-over-uart). Mounted printer images support simultaneous modem use.
+- Tapes store user data, not software. Use the cartridge's SAVE/LOAD commands
+- Keyboard files: listings, text and music; [examples](examples/README.md) and [converters](tools/README.md#keyboard-files) provided. Any key cancels entry. Keyboard > OSD Aborts VBK controls cancellation when opening the menu
+- Printer capture: Stop Capture and Save, wait for Ready, then unmount before export
+- Timeshare: [UART network bridge setup](docs/EXPANDER1.md#timeshare-over-uart). Mounted printer images support simultaneous modem use
 
 ## Keyboard
 
@@ -51,37 +51,37 @@ See [accuracy and remaining work](docs/ACCURACY.md).
 | F4 / End | SPECIAL/ALARM |
 | F5 / Ctrl+Enter | ERASE/RESTART |
 
-- SHIFT: toggle in the BIOS and most software; held in Timeshare. The PC keyboard's Caps Lock LED lights in upper SHIFT mode while the software keeps the BIOS SHIFT state (BIOS, APL/S and most cartridges).
-- Numbers: number row and keypad alias the VideoBrain numeric positions; select the software's numeric/SHIFT mode first.
-- [Original keyboard, cartridge overlays and software instructions](docs/HOW-TO-PLAY.md).
+- SHIFT: toggle in the BIOS and most software; held in Timeshare. The PC keyboard's Caps Lock LED lights in upper SHIFT mode while the software keeps the BIOS SHIFT state (BIOS, APL/S and most cartridges)
+- Numbers: number row and keypad alias the VideoBrain numeric positions; select the software's numeric/SHIFT mode first
+- [Original keyboard, cartridge overlays and software instructions](docs/HOW-TO-PLAY.md)
 
 ## Joysticks
 
-- Calibrate Sticks: run while the game reads its sticks; repeat after reset or a new game as needed.
-- Stick Preset > Auto: cartridge-specific centering; manual override available.
-- Analog Mode > Relative: hold position on release, useful for Tennis. Three speed settings.
-- Paired Sticks: right stick and Fire (Paired) operate another joystick. Pinball pairs 1+2 / 3+4; Doubles pairs 1+3 / 2+4.
+- Calibrate Sticks: run while the game reads its sticks; repeat after reset or a new game as needed
+- Stick Preset > Auto: cartridge-specific centering; manual override available
+- Analog Mode > Relative: hold position on release, useful for Tennis. Three speed settings
+- Paired Sticks: right stick and Fire (Paired) operate another joystick. Pinball pairs 1+2 / 3+4; Doubles pairs 1+3 / 2+4
 
 [Calibration, pairing and timing](docs/JOYSTICK.md).
 
 ## Video
 
-- Output: 480i (Original), 240p or 480p; select Apply Video Output to switch.
-- Colors: 16 (Original) by default; 32 (Patent) uses experimental intensity mapping.
+- Output: 480i (Original), 240p or 480p; select Apply Video Output to switch
+- Colors: 16 (Original) by default; 32 (Patent) uses experimental intensity mapping
 
 [Output behavior and color accuracy](docs/VIDEO.md).
 
 ## Reset and status
 
-- Reset: power cycle; clears volatile memory, retains loaded ROMs.
-- System > Master Control (Soft Reset) / Esc original reset key; software decides what to retain. Discards the APL/S program. Disable Esc with Keyboard > Esc Soft Reset > Off.
-- System > Info Messages > Off disable status popups, including errors.
+- Reset: power cycle; clears volatile memory, retains loaded ROMs
+- System > Master Control (Soft Reset) / Esc original reset key; software decides what to retain. Discards the APL/S program. Disable Esc with Keyboard > Esc Soft Reset > Off
+- System > Info Messages > Off disable status popups, including errors
 
 ## Tools and building
 
 - [Tools](tools/README.md): ROM assembly, keyboard conversion, tape and printer utilities.
-- Quartus 17.0.2 for core builds.
-- [Simulation and regressions](verilator/README.md); [contributing and ROM requirements](CONTRIBUTING.md).
+- Quartus 17.0.2 for core builds
+- [Simulation and regressions](verilator/README.md); [contributing and ROM requirements](CONTRIBUTING.md)
 
 ## Sources
 
