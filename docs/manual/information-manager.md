@@ -9,11 +9,11 @@
 
 ## About This Booklet
 
-As of November 2026, no owner's manual for Information Manager has been located, and one may never have been printed. The cartridge itself exists as a September 1978 prototype and has been dumped, so this 2026 booklet was written to aid in usage of the software.
+As of November 2026, no owner's manual for Information Manager has been located, and one may never have been printed. The cartridge itself exists as a September 1978 prototype and has been dumped, so this 2026 booklet was written to help you use it.
 
 It is written in the style of the original VideoBrain booklets; it is not an original Umtech publication. Cover formatting and screen illustrations are approximations based on existing official material. 
 
-The functions were worked out by reading the program code, then iteratively testing on the extracted strings and traced logic. The last page lists which features have been tried on a running machine and which are known only from the code.
+The functions were worked out by reading the program code, then checked against the program's own messages and behavior. The last page lists which features have been tried on a running machine and which are known only from the code.
 
 The newest version of this guide, along with the VideoBrain MiSTer core itself, is at https://github.com/MiSTer-devel/VideoBrain_MiSTer.
 
@@ -36,7 +36,7 @@ You decide what each entry contains. You type in the entries, and Information Ma
 
 ## Starting the Program
 
-Insert the cartridge and turn on your VideoBrain. The opening screen lists the three things Information Manager can do:
+Insert the cartridge and turn on your VideoBrain. The VideoBrain will display the three modes of operation:
 
 ```screen
 PROGRAM
@@ -46,18 +46,18 @@ EDIT
 :
 ```
 
-The colon is the **main prompt**. Type the name of what you want to do and press <kbd>NEXT</kbd>. You only need the first letters: `EN` for ENTER, `R` for REVIEW and `ED` for EDIT.
+The colon is the **main prompt**. Type the name of the mode you want and press <kbd>NEXT</kbd>. You only need the first letters: `EN` for ENTER, `R` for REVIEW and `ED` for EDIT.
 
 ## The Keys You Will Use
 
 <dl class="keys">
-<dt><kbd>NEXT</kbd></dt><dd>tells the computer you have finished typing. Press it after every command and every answer.</dd>
-<dt><kbd>SPECIAL</kbd></dt><dd>means "I'm finished." Press it at an empty prompt to stop defining fields or to stop entering records.</dd>
-<dt><kbd>SHIFT</kbd></dt><dd>switches between letters and numbers, just as on the VideoBrain's own programs. Shift up for field lengths, quantities and prices.</dd>
+<dt><kbd>NEXT</kbd></dt><dd>tells the computer you have finished typing.</dd>
+<dt><kbd>SPECIAL</kbd></dt><dd>ends a list. Press it at an empty <code>NAME:</code> prompt to finish laying out fields, or at an empty first-field prompt to finish entering records.</dd>
+<dt><kbd>SHIFT</kbd></dt><dd>switches the keyboard between letters and numbers. Use it to type field lengths, quantities and prices.</dd>
 <dt><kbd>MASTER<br>CONTROL</kbd></dt><dd>starts the program again at the opening screen.</dd>
 </dl>
 
-In this booklet, **type** `PRINT ALL` means type the words exactly as shown and then press <kbd>NEXT</kbd>.
+In this booklet, **type** means type the words exactly as shown and then press <kbd>NEXT</kbd>. In a command, a word in lowercase, such as `field`, stands for something you supply.
 
 # Planning
 
@@ -95,7 +95,7 @@ Each field also has a **type**, which tells Information Manager what kind of inf
 
 Information Manager can add up the numbers in I and M fields, so use a number type whenever you will want a total. For a number field, the length is the number of positions on the screen. Leave room for a minus sign and, in an M field, for the decimal point. Number fields may be from 1 to 15 positions long.
 
-> **Tip:** Plan your fields on paper first. Once records are recorded, the field layout of that database stays the same.
+> **Tip:** Plan your fields on paper first. The field layout cannot be changed after the database is recorded.
 
 # Creating a Database
 
@@ -134,7 +134,7 @@ ITEM:
 
 Type each answer and press <kbd>NEXT</kbd>. When you answer the last field, the record goes onto the tape and the computer starts the next record with `ITEM:` again.
 
-When you have entered your last record, press <kbd>SPECIAL</kbd> at the empty first prompt. Information Manager marks the end of the database on the tape and returns to the opening screen.
+When you have entered your last record, press <kbd>SPECIAL</kbd> at an empty `ITEM:` prompt (the first field). Information Manager marks the end of the database on the tape and returns to the opening screen.
 
 > **There is no SAVE command.** Information Manager records as you go. Wait until the tape has stopped before you remove it.
 
@@ -171,11 +171,11 @@ END OF TAPE
 
 ## Short Forms
 
-At the slash prompt, several commands have one-letter short forms. `P ALL` means the same as `PRINT ALL`. The Command Summary at the back of this booklet lists them all. Note that the short forms are exact: `P` works, but `PR` does not.
+At the slash prompt, several commands have one-letter short forms. `P ALL` means the same as `PRINT ALL`. The Command Summary at the back of this booklet lists them all. Use the short forms exactly as listed: `P` works, but `PR` does not.
 
 ## Seeing the Layout with DESC
 
-Forgotten how a database was set up? Type `P DESC`. Information Manager shows the database name and each field's name, length and type, without moving the tape.
+To see how a database is laid out, type `P DESC`. Information Manager shows the database name and each field's name, length and type, without moving the tape.
 
 ```screen
 /P DESC
@@ -187,7 +187,7 @@ TYPE:A
 
 ## Showing One Field with FLD
 
-To list just one field from each record, choose it with FLD before printing:
+To list just one field from each record, type `FLD=field` before printing. For example:
 
 ```screen
 /FLD=ITEM
@@ -200,13 +200,13 @@ This shows only the ITEM of each record. The choice lasts until you leave REVIEW
 
 ## Adding Up a Field
 
-Information Manager can count your records and total any number field, sorted into groups. Use three commands before you print:
+Information Manager can count your records and total any number field, grouped by a word field. Use three commands before you print:
 
-- `SORT=` names a word field to group the records by.
-- `TOT=` names the number field to add up.
+- `SORT=field` names a word field to group the records by.
+- `TOT=field` names the number field to add up.
 - `TOTAL` shows the report once the records have been read.
 
-Rewind the tape, choose REVIEW, and type:
+For example, rewind the tape, choose REVIEW, and type:
 
 ```screen
 /SORT=LOCATION
@@ -240,13 +240,13 @@ At the slash prompt, these commands act on the **current record**: the one Infor
 | `REPLACE` | Asks for new values for every field of the current record. |
 | `ADD` | Keeps the current record, then lets you type new records after it. Press SPECIAL to stop. |
 | `DELETE` | Leaves the current record out of the copy. |
-| `DELETE 3` | Leaves out the current record and the two after it. |
+| `DELETE n` | Leaves out the current record and the ones after it, n records in all. |
 | `DELETE ALL` | Leaves out the current record and everything after it. |
-| `DELETE ITEM=FUSES` | Copies records until it finds FUSES, then leaves that one out. |
+| `DELETE field=value` | Copies records until it finds one whose field holds the value, then leaves that one out. |
 
 Commands work forward along the tape. Once a record has gone by, you cannot return to it in this pass. Finish with `EXIT`, which copies any remaining records and closes the copy.
 
-When you search with `DELETE ITEM=FUSES`, an entry that begins with FUSES also matches, and a `*` matches any single letter.
+For example, `DELETE ITEM=FUSES` copies CANDLES and leaves out FUSES. An entry that begins with the value also matches, and a `*` matches any single letter.
 
 ## Combining Two Databases
 
@@ -304,7 +304,10 @@ PTR applies only to the command it ends. The next command without PTR goes to th
 | `TOTAL` | `T` | REVIEW | Show the report |
 | `REPLACE` | `R` | EDIT | Retype the current record |
 | `ADD` | `A` | EDIT | Insert new records |
-| `DELETE` | `D` | EDIT | Leave records out |
+| `DELETE` | `D` | EDIT | Leave out the current record |
+| `DELETE n` | | EDIT | Leave out n records |
+| `DELETE ALL` | | EDIT | Leave out the rest |
+| `DELETE field=value` | | EDIT | Leave out the next match |
 | `MERGE` | `M` | EDIT | Continue with another tape |
 | `EXIT` | `E` | both | Finish and return |
 
@@ -336,7 +339,7 @@ Load Expander 1 firmware along with the cartridge. In the OSD's Tapes menu, **Mo
 
 The user LED shows tape activity. Wait for it to go out before changing tapes or cores.
 
-For printing, set **Printer > Info. Manager Fix** to On before loading the cartridge, then mount a printer capture image, set it to 300 baud and start capture before using PTR. See `docs/PRINTER.md` and `docs/TAPE.md` in the core's repository, and `docs/INFOMAN-MANUAL.md` for the full technical guide.
+For printing, set **Printer > Info. Manager Fix** to On before loading the cartridge, then mount a printer capture image, set it to 300 baud and start capture before using PTR. See `docs/PRINTER.md` and `docs/TAPE.md` in the core's repository, and `docs/INFOMAN-MANUAL.md` for technical notes.
 
 <div style="break-before: page"></div>
 
